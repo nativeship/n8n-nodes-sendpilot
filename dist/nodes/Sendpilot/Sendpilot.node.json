@@ -1,0 +1,4 @@
+{
+  "node": "@nativeship/n8n-nodes-sendpilot.sendpilot",
+  "nodeVersion": "1"
+}

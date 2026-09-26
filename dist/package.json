@@ -1,0 +1,49 @@
+{
+    "author": {
+        "email": "work.bhshekhaliya@gmail.com",
+        "name": "Administrator"
+    },
+    "description": "Manage LinkedIn outreach campaigns, track lead statuses, and monitor credit balances with SendPilot",
+    "devDependencies": {
+        "@n8n/node-cli": "0.41.2",
+        "@types/node": "22.15.29",
+        "eslint": "9.29.0",
+        "prettier": "3.6.2",
+        "typescript": "5.9.3"
+    },
+    "engines": {
+        "node": "\u003e=22.22.0"
+    },
+    "files": [
+        "dist"
+    ],
+    "homepage": "https://nativeship.io/nodes/@nativeship/n8n-nodes-sendpilot",
+    "keywords": [
+        "n8n-community-node-package"
+    ],
+    "license": "MIT",
+    "n8n": {
+        "credentials": [
+            "dist/credentials/SendpilotApi.credentials.js"
+        ],
+        "n8nNodesApiVersion": 1,
+        "nodes": [
+            "dist/nodes/Sendpilot/Sendpilot.node.js"
+        ],
+        "strict": true
+    },
+    "name": "@nativeship/n8n-nodes-sendpilot",
+    "peerDependencies": {
+        "n8n-workflow": "*"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "n8n-node build",
+        "dev": "n8n-node dev",
+        "lint": "n8n-node lint",
+        "lint:fix": "n8n-node lint --fix"
+    },
+    "version": "1.0.0"
+}
