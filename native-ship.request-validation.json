@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "fixtures": [
     {
-      "operationId": "listCampaigns",
+      "operationId": "campaigns.list",
       "method": "GET",
       "path": "/v1/campaigns",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -18,13 +18,14 @@
         {
           "name": "status",
           "inputName": "status",
-          "sample": "active",
+          "sample": "all",
+          "default": "all",
           "enum": [
+            "all",
             "active",
             "paused",
             "draft",
-            "finished",
-            "all"
+            "finished"
           ],
           "location": "query",
           "required": false,
@@ -77,11 +78,15 @@
       "errors": [
         {
           "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
         }
       ],
       "requestPlan": {
-        "operationId": "listCampaigns",
+        "operationId": "campaigns.list",
         "method": "GET",
         "path": "/v1/campaigns",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -111,7 +116,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -139,7 +144,11 @@
         "errors": [
           {
             "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
           }
         ],
         "unsupportedSemantics": []
@@ -151,14 +160,14 @@
       ]
     },
     {
-      "operationId": "updateCampaign",
+      "operationId": "campaigns.update",
       "method": "PATCH",
       "path": "/v1/campaigns/{id}",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -181,6 +190,7 @@
             "name": "action",
             "inputName": "action",
             "sample": "pause",
+            "example": "pause",
             "enum": [
               "pause",
               "resume"
@@ -228,19 +238,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
-        },
-        {
-          "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid action or campaign state"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Campaign not found"
         }
       ],
       "requestPlan": {
-        "operationId": "updateCampaign",
+        "operationId": "campaigns.update",
         "method": "PATCH",
         "path": "/v1/campaigns/{id}",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -262,7 +268,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -305,15 +311,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
-          },
-          {
-            "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid action or campaign state"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Campaign not found"
           }
         ],
         "unsupportedSemantics": []
@@ -325,14 +327,14 @@
       ]
     },
     {
-      "operationId": "getCredits",
+      "operationId": "credits.get",
       "method": "GET",
       "path": "/v1/credits",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -381,15 +383,23 @@
       "errors": [
         {
           "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid or missing API key"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Workspace not found"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
+        },
+        {
+          "status": "500",
+          "title": "Internal server error"
         }
       ],
       "requestPlan": {
-        "operationId": "getCredits",
+        "operationId": "credits.get",
         "method": "GET",
         "path": "/v1/credits",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -406,7 +416,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -449,11 +459,19 @@
         "errors": [
           {
             "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid or missing API key"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Workspace not found"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
+          },
+          {
+            "status": "500",
+            "title": "Internal server error"
           }
         ],
         "unsupportedSemantics": []
@@ -465,14 +483,616 @@
       ]
     },
     {
-      "operationId": "getConversationMessages",
+      "operationId": "leadDatabase.filters",
+      "method": "GET",
+      "path": "/v1/lead-database/filters",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "filter",
+          "inputName": "filter",
+          "sample": "value/id",
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "search",
+          "inputName": "search",
+          "sample": "value/id",
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "offset",
+          "inputName": "offset",
+          "sample": 0,
+          "default": 0,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "limit",
+          "inputName": "limit",
+          "sample": 50,
+          "default": 50,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        }
+      ],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "filter",
+            "type": "string"
+          },
+          {
+            "name": "filters",
+            "type": "array"
+          },
+          {
+            "name": "has_more",
+            "type": "boolean"
+          },
+          {
+            "name": "limit",
+            "type": "number"
+          },
+          {
+            "name": "offset",
+            "type": "number"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          },
+          {
+            "name": "values",
+            "type": "array"
+          }
+        ],
+        "simplifiedFields": [
+          "filter",
+          "filters",
+          "has_more",
+          "limit",
+          "offset",
+          "total",
+          "values"
+        ]
+      },
+      "errors": [
+        {
+          "status": "400",
+          "title": "Unsupported filter or invalid pagination"
+        },
+        {
+          "status": "401",
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "403",
+          "title": "Key lacks leads:read"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "leadDatabase.filters",
+        "method": "GET",
+        "path": "/v1/lead-database/filters",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/lead-database/filters",
+          "query": [
+            {
+              "name": "filter",
+              "source": "additionalFields"
+            },
+            {
+              "name": "search",
+              "source": "additionalFields"
+            },
+            {
+              "name": "offset",
+              "source": "additionalFields"
+            },
+            {
+              "name": "limit",
+              "source": "additionalFields"
+            }
+          ],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "filter",
+              "type": "string"
+            },
+            {
+              "name": "filters",
+              "type": "array"
+            },
+            {
+              "name": "has_more",
+              "type": "boolean"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            },
+            {
+              "name": "offset",
+              "type": "number"
+            },
+            {
+              "name": "total",
+              "type": "number"
+            },
+            {
+              "name": "values",
+              "type": "array"
+            }
+          ],
+          "simplifiedFields": [
+            "filter",
+            "filters",
+            "has_more",
+            "limit",
+            "offset",
+            "total",
+            "values"
+          ]
+        },
+        "errors": [
+          {
+            "status": "400",
+            "title": "Unsupported filter or invalid pagination"
+          },
+          {
+            "status": "401",
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "403",
+            "title": "Key lacks leads:read"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "senders.quotas",
+      "method": "GET",
+      "path": "/v1/senders/quotas",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "senders",
+            "type": "array"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          }
+        ],
+        "simplifiedFields": [
+          "senders",
+          "total"
+        ]
+      },
+      "errors": [
+        {
+          "status": "401",
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "403",
+          "title": "Key lacks senders:read"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "senders.quotas",
+        "method": "GET",
+        "path": "/v1/senders/quotas",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/senders/quotas",
+          "query": [],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "senders",
+              "type": "array"
+            },
+            {
+              "name": "total",
+              "type": "number"
+            }
+          ],
+          "simplifiedFields": [
+            "senders",
+            "total"
+          ]
+        },
+        "errors": [
+          {
+            "status": "401",
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "403",
+            "title": "Key lacks senders:read"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "workspace.me",
+      "method": "GET",
+      "path": "/v1/me",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "apiKey",
+            "type": "object"
+          },
+          {
+            "name": "missingScopes",
+            "type": "array"
+          },
+          {
+            "name": "subscription",
+            "type": "object"
+          },
+          {
+            "name": "workspace",
+            "type": "object"
+          }
+        ],
+        "simplifiedFields": [
+          "apiKey",
+          "missingScopes",
+          "subscription",
+          "workspace"
+        ]
+      },
+      "errors": [
+        {
+          "status": "401",
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "403",
+          "title": "Key lacks workspace:read"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "workspace.me",
+        "method": "GET",
+        "path": "/v1/me",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/me",
+          "query": [],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "apiKey",
+              "type": "object"
+            },
+            {
+              "name": "missingScopes",
+              "type": "array"
+            },
+            {
+              "name": "subscription",
+              "type": "object"
+            },
+            {
+              "name": "workspace",
+              "type": "object"
+            }
+          ],
+          "simplifiedFields": [
+            "apiKey",
+            "missingScopes",
+            "subscription",
+            "workspace"
+          ]
+        },
+        "errors": [
+          {
+            "status": "401",
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "403",
+            "title": "Key lacks workspace:read"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "inbox.listConversations",
+      "method": "GET",
+      "path": "/v1/inbox/conversations",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "accountId",
+          "inputName": "accountId",
+          "sample": "sender_123",
+          "example": "sender_123",
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "limit",
+          "inputName": "limit",
+          "sample": 20,
+          "default": 20,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "continuationToken",
+          "inputName": "continuationToken",
+          "sample": "value/id",
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        }
+      ],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "conversations",
+            "type": "array"
+          },
+          {
+            "name": "pagination",
+            "type": "object"
+          }
+        ],
+        "simplifiedFields": [
+          "conversations",
+          "pagination"
+        ]
+      },
+      "errors": [
+        {
+          "status": "404",
+          "title": "Account not found"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "inbox.listConversations",
+        "method": "GET",
+        "path": "/v1/inbox/conversations",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/inbox/conversations",
+          "query": [
+            {
+              "name": "accountId",
+              "source": "additionalFields"
+            },
+            {
+              "name": "limit",
+              "source": "additionalFields"
+            },
+            {
+              "name": "continuationToken",
+              "source": "additionalFields"
+            }
+          ],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "conversations",
+              "type": "array"
+            },
+            {
+              "name": "pagination",
+              "type": "object"
+            }
+          ],
+          "simplifiedFields": [
+            "conversations",
+            "pagination"
+          ]
+        },
+        "errors": [
+          {
+            "status": "404",
+            "title": "Account not found"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "inbox.listMessages",
       "method": "GET",
       "path": "/v1/inbox/conversations/{conversationId}/messages",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -481,7 +1101,8 @@
         {
           "name": "conversationId",
           "inputName": "conversationId",
-          "sample": "value/id",
+          "sample": "2-OVp-y-UNyFXBYvx0FqmQ",
+          "example": "2-OVp-y-UNyFXBYvx0FqmQ",
           "location": "path",
           "required": true,
           "arrayFormat": "indices"
@@ -489,7 +1110,8 @@
         {
           "name": "accountId",
           "inputName": "accountId",
-          "sample": "value/id",
+          "sample": "sender_123",
+          "example": "sender_123",
           "location": "query",
           "required": true,
           "arrayFormat": "indices"
@@ -544,16 +1166,16 @@
       },
       "errors": [
         {
-          "status": "401",
-          "title": "Unauthorized"
+          "status": "400",
+          "title": "Missing accountId parameter"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Conversation or account not found"
         }
       ],
       "requestPlan": {
-        "operationId": "getConversationMessages",
+        "operationId": "inbox.listMessages",
         "method": "GET",
         "path": "/v1/inbox/conversations/{conversationId}/messages",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -583,7 +1205,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -615,12 +1237,12 @@
         },
         "errors": [
           {
-            "status": "401",
-            "title": "Unauthorized"
+            "status": "400",
+            "title": "Missing accountId parameter"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Conversation or account not found"
           }
         ],
         "unsupportedSemantics": []
@@ -632,163 +1254,14 @@
       ]
     },
     {
-      "operationId": "listConversations",
-      "method": "GET",
-      "path": "/v1/inbox/conversations",
-      "serverId": "documentServer1HttpsApiSendpilotAi",
-      "authentication": [
-        {
-          "schemes": [
-            "ApiKeyAuth"
-          ],
-          "scopes": []
-        }
-      ],
-      "parameters": [
-        {
-          "name": "accountId",
-          "inputName": "accountId",
-          "sample": "value/id",
-          "location": "query",
-          "required": false,
-          "arrayFormat": "indices"
-        },
-        {
-          "name": "limit",
-          "inputName": "limit",
-          "sample": 20,
-          "default": 20,
-          "location": "query",
-          "required": false,
-          "arrayFormat": "indices"
-        },
-        {
-          "name": "continuationToken",
-          "inputName": "continuationToken",
-          "sample": "value/id",
-          "location": "query",
-          "required": false,
-          "arrayFormat": "indices"
-        }
-      ],
-      "request": {
-        "contentType": "application/json",
-        "representation": "structured",
-        "fields": []
-      },
-      "retry": {},
-      "pagination": {
-        "style": "none"
-      },
-      "response": {
-        "fields": [
-          {
-            "name": "conversations",
-            "type": "array"
-          },
-          {
-            "name": "pagination",
-            "type": "object"
-          }
-        ],
-        "simplifiedFields": [
-          "conversations",
-          "pagination"
-        ]
-      },
-      "errors": [
-        {
-          "status": "401",
-          "title": "Unauthorized"
-        },
-        {
-          "status": "404",
-          "title": "Resource not found"
-        }
-      ],
-      "requestPlan": {
-        "operationId": "listConversations",
-        "method": "GET",
-        "path": "/v1/inbox/conversations",
-        "serverId": "documentServer1HttpsApiSendpilotAi",
-        "request": {
-          "method": "GET",
-          "url": "=/v1/inbox/conversations",
-          "query": [
-            {
-              "name": "accountId",
-              "source": "additionalFields"
-            },
-            {
-              "name": "limit",
-              "source": "additionalFields"
-            },
-            {
-              "name": "continuationToken",
-              "source": "additionalFields"
-            }
-          ],
-          "body": [],
-          "headers": {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-          }
-        },
-        "authentication": [
-          {
-            "schemes": [
-              "ApiKeyAuth"
-            ],
-            "scopes": []
-          }
-        ],
-        "retry": {},
-        "pagination": {
-          "style": "none"
-        },
-        "response": {
-          "fields": [
-            {
-              "name": "conversations",
-              "type": "array"
-            },
-            {
-              "name": "pagination",
-              "type": "object"
-            }
-          ],
-          "simplifiedFields": [
-            "conversations",
-            "pagination"
-          ]
-        },
-        "errors": [
-          {
-            "status": "401",
-            "title": "Unauthorized"
-          },
-          {
-            "status": "404",
-            "title": "Resource not found"
-          }
-        ],
-        "unsupportedSemantics": []
-      },
-      "assertions": [
-        "retry attempts preserve request and pagination state until a response succeeds",
-        "pagination advances only after a completed page response",
-        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
-      ]
-    },
-    {
-      "operationId": "listSenders",
+      "operationId": "inbox.listSenders",
       "method": "GET",
       "path": "/v1/inbox/senders",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -811,7 +1284,7 @@
           },
           {
             "name": "total",
-            "type": "integer"
+            "type": "number"
           }
         ],
         "simplifiedFields": [
@@ -819,14 +1292,9 @@
           "total"
         ]
       },
-      "errors": [
-        {
-          "status": "401",
-          "title": "Unauthorized"
-        }
-      ],
+      "errors": [],
       "requestPlan": {
-        "operationId": "listSenders",
+        "operationId": "inbox.listSenders",
         "method": "GET",
         "path": "/v1/inbox/senders",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -843,7 +1311,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -860,7 +1328,7 @@
             },
             {
               "name": "total",
-              "type": "integer"
+              "type": "number"
             }
           ],
           "simplifiedFields": [
@@ -868,12 +1336,7 @@
             "total"
           ]
         },
-        "errors": [
-          {
-            "status": "401",
-            "title": "Unauthorized"
-          }
-        ],
+        "errors": [],
         "unsupportedSemantics": []
       },
       "assertions": [
@@ -883,14 +1346,14 @@
       ]
     },
     {
-      "operationId": "sendConnectionRequest",
+      "operationId": "inbox.sendConnectionRequest",
       "method": "POST",
       "path": "/v1/inbox/connect",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -903,21 +1366,24 @@
           {
             "name": "message",
             "inputName": "message",
-            "sample": "value/id",
+            "sample": "Hi John, I would love to connect with you!",
+            "example": "Hi John, I would love to connect with you!",
             "type": "string",
             "required": false
           },
           {
             "name": "recipientLinkedinUrl",
             "inputName": "recipientLinkedinUrl",
-            "sample": "value/id",
+            "sample": "https://www.linkedin.com/in/johndoe/",
+            "example": "https://www.linkedin.com/in/johndoe/",
             "type": "string",
             "required": true
           },
           {
             "name": "senderId",
             "inputName": "senderId",
-            "sample": "value/id",
+            "sample": "sender_123",
+            "example": "sender_123",
             "type": "string",
             "required": true
           }
@@ -929,6 +1395,10 @@
       },
       "response": {
         "fields": [
+          {
+            "name": "error",
+            "type": "string"
+          },
           {
             "name": "recipientLinkedinUrl",
             "type": "string"
@@ -952,6 +1422,7 @@
           }
         ],
         "simplifiedFields": [
+          "error",
           "recipientLinkedinUrl",
           "requestId",
           "status",
@@ -962,19 +1433,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
+          "title": "Invalid request or sender not found"
         },
         {
-          "status": "401",
-          "title": "Unauthorized"
-        },
-        {
-          "status": "404",
-          "title": "Resource not found"
+          "status": "429",
+          "title": "Daily connection limit exceeded"
         }
       ],
       "requestPlan": {
-        "operationId": "sendConnectionRequest",
+        "operationId": "inbox.sendConnectionRequest",
         "method": "POST",
         "path": "/v1/inbox/connect",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -1004,7 +1471,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1015,6 +1482,10 @@
         },
         "response": {
           "fields": [
+            {
+              "name": "error",
+              "type": "string"
+            },
             {
               "name": "recipientLinkedinUrl",
               "type": "string"
@@ -1038,6 +1509,7 @@
             }
           ],
           "simplifiedFields": [
+            "error",
             "recipientLinkedinUrl",
             "requestId",
             "status",
@@ -1048,15 +1520,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
+            "title": "Invalid request or sender not found"
           },
           {
-            "status": "401",
-            "title": "Unauthorized"
-          },
-          {
-            "status": "404",
-            "title": "Resource not found"
+            "status": "429",
+            "title": "Daily connection limit exceeded"
           }
         ],
         "unsupportedSemantics": []
@@ -1068,14 +1536,14 @@
       ]
     },
     {
-      "operationId": "sendMessage",
+      "operationId": "inbox.sendMessage",
       "method": "POST",
       "path": "/v1/inbox/send",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -1088,35 +1556,40 @@
           {
             "name": "campaignId",
             "inputName": "campaignId",
-            "sample": "value/id",
+            "sample": "campaign_123",
+            "example": "campaign_123",
             "type": "string",
             "required": false
           },
           {
             "name": "leadId",
             "inputName": "leadId",
-            "sample": "value/id",
+            "sample": "lead_123",
+            "example": "lead_123",
             "type": "string",
             "required": false
           },
           {
             "name": "message",
             "inputName": "message",
-            "sample": "value/id",
+            "sample": "Hi John, I wanted to follow up on our conversation...",
+            "example": "Hi John, I wanted to follow up on our conversation...",
             "type": "string",
             "required": true
           },
           {
             "name": "recipientLinkedinUrl",
             "inputName": "recipientLinkedinUrl",
-            "sample": "value/id",
+            "sample": "https://www.linkedin.com/in/johndoe/",
+            "example": "https://www.linkedin.com/in/johndoe/",
             "type": "string",
             "required": true
           },
           {
             "name": "senderId",
             "inputName": "senderId",
-            "sample": "value/id",
+            "sample": "sender_123",
+            "example": "sender_123",
             "type": "string",
             "required": true
           }
@@ -1128,6 +1601,14 @@
       },
       "response": {
         "fields": [
+          {
+            "name": "conversationId",
+            "type": "string"
+          },
+          {
+            "name": "error",
+            "type": "string"
+          },
           {
             "name": "leadId",
             "type": "string"
@@ -1155,6 +1636,8 @@
           }
         ],
         "simplifiedFields": [
+          "conversationId",
+          "error",
           "leadId",
           "messageId",
           "recipientLinkedinUrl",
@@ -1166,19 +1649,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
+          "title": "Invalid request or sender not found"
         },
         {
-          "status": "401",
-          "title": "Unauthorized"
-        },
-        {
-          "status": "404",
-          "title": "Resource not found"
+          "status": "429",
+          "title": "Daily message limit exceeded"
         }
       ],
       "requestPlan": {
-        "operationId": "sendMessage",
+        "operationId": "inbox.sendMessage",
         "method": "POST",
         "path": "/v1/inbox/send",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -1216,7 +1695,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1227,6 +1706,14 @@
         },
         "response": {
           "fields": [
+            {
+              "name": "conversationId",
+              "type": "string"
+            },
+            {
+              "name": "error",
+              "type": "string"
+            },
             {
               "name": "leadId",
               "type": "string"
@@ -1254,6 +1741,8 @@
             }
           ],
           "simplifiedFields": [
+            "conversationId",
+            "error",
             "leadId",
             "messageId",
             "recipientLinkedinUrl",
@@ -1265,15 +1754,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
+            "title": "Invalid request or sender not found"
           },
           {
-            "status": "401",
-            "title": "Unauthorized"
-          },
-          {
-            "status": "404",
-            "title": "Resource not found"
+            "status": "429",
+            "title": "Daily message limit exceeded"
           }
         ],
         "unsupportedSemantics": []
@@ -1285,14 +1770,14 @@
       ]
     },
     {
-      "operationId": "sendMessageToLead",
+      "operationId": "inbox.sendMessageToLead",
       "method": "POST",
       "path": "/v1/inbox/send/lead/{leadId}",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -1312,16 +1797,25 @@
         "representation": "structured",
         "fields": [
           {
+            "name": "campaignId",
+            "inputName": "campaignId",
+            "sample": "value/id",
+            "type": "string",
+            "required": false
+          },
+          {
             "name": "message",
             "inputName": "message",
-            "sample": "value/id",
+            "sample": "Hi {{firstName}}, I wanted to follow up on our conversation...",
+            "example": "Hi {{firstName}}, I wanted to follow up on our conversation...",
             "type": "string",
             "required": true
           },
           {
             "name": "senderId",
             "inputName": "senderId",
-            "sample": "value/id",
+            "sample": "sender_123",
+            "example": "sender_123",
             "type": "string",
             "required": true
           }
@@ -1333,6 +1827,14 @@
       },
       "response": {
         "fields": [
+          {
+            "name": "conversationId",
+            "type": "string"
+          },
+          {
+            "name": "error",
+            "type": "string"
+          },
           {
             "name": "leadId",
             "type": "string"
@@ -1360,6 +1862,8 @@
           }
         ],
         "simplifiedFields": [
+          "conversationId",
+          "error",
           "leadId",
           "messageId",
           "recipientLinkedinUrl",
@@ -1371,19 +1875,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
-        },
-        {
-          "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid request or sender not found"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Lead not found"
         }
       ],
       "requestPlan": {
-        "operationId": "sendMessageToLead",
+        "operationId": "inbox.sendMessageToLead",
         "method": "POST",
         "path": "/v1/inbox/send/lead/{leadId}",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -1392,6 +1892,10 @@
           "url": "=/v1/inbox/send/lead/{{$parameter[\"leadId\"]}}",
           "query": [],
           "body": [
+            {
+              "name": "campaignId",
+              "source": "additionalFields"
+            },
             {
               "name": "message",
               "source": "parameter"
@@ -1409,7 +1913,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1420,6 +1924,14 @@
         },
         "response": {
           "fields": [
+            {
+              "name": "conversationId",
+              "type": "string"
+            },
+            {
+              "name": "error",
+              "type": "string"
+            },
             {
               "name": "leadId",
               "type": "string"
@@ -1447,6 +1959,8 @@
             }
           ],
           "simplifiedFields": [
+            "conversationId",
+            "error",
             "leadId",
             "messageId",
             "recipientLinkedinUrl",
@@ -1458,15 +1972,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
-          },
-          {
-            "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid request or sender not found"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Lead not found"
           }
         ],
         "unsupportedSemantics": []
@@ -1478,14 +1988,208 @@
       ]
     },
     {
-      "operationId": "createLeadDatabaseSearch",
+      "operationId": "leadDatabase.getSearchResults",
+      "method": "GET",
+      "path": "/v1/lead-database/searches/{id}/results",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "inputName": "id",
+          "sample": "value/id",
+          "location": "path",
+          "required": true,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "limit",
+          "inputName": "limit",
+          "sample": 100,
+          "default": 100,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "offset",
+          "inputName": "offset",
+          "sample": 0,
+          "default": 0,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        }
+      ],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "has_more",
+            "type": "boolean"
+          },
+          {
+            "name": "leads",
+            "type": "array"
+          },
+          {
+            "name": "limit",
+            "type": "number"
+          },
+          {
+            "name": "offset",
+            "type": "number"
+          },
+          {
+            "name": "search_id",
+            "type": "string"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          }
+        ],
+        "simplifiedFields": [
+          "has_more",
+          "leads",
+          "limit",
+          "offset",
+          "search_id",
+          "total"
+        ]
+      },
+      "errors": [
+        {
+          "status": "401",
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "404",
+          "title": "Search not found"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "leadDatabase.getSearchResults",
+        "method": "GET",
+        "path": "/v1/lead-database/searches/{id}/results",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/lead-database/searches/{{$parameter[\"id\"]}}/results",
+          "query": [
+            {
+              "name": "limit",
+              "source": "additionalFields"
+            },
+            {
+              "name": "offset",
+              "source": "additionalFields"
+            }
+          ],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "has_more",
+              "type": "boolean"
+            },
+            {
+              "name": "leads",
+              "type": "array"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            },
+            {
+              "name": "offset",
+              "type": "number"
+            },
+            {
+              "name": "search_id",
+              "type": "string"
+            },
+            {
+              "name": "total",
+              "type": "number"
+            }
+          ],
+          "simplifiedFields": [
+            "has_more",
+            "leads",
+            "limit",
+            "offset",
+            "search_id",
+            "total"
+          ]
+        },
+        "errors": [
+          {
+            "status": "401",
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "404",
+            "title": "Search not found"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "leadDatabase.startSearch",
       "method": "POST",
       "path": "/v1/lead-database/searches",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -1505,8 +2209,8 @@
           {
             "name": "limit",
             "inputName": "limit",
-            "sample": 2,
-            "type": "integer",
+            "sample": 2.5,
+            "type": "number",
             "required": true
           },
           {
@@ -1519,7 +2223,8 @@
           {
             "name": "webhook_url",
             "inputName": "webhook_url",
-            "sample": "https://local-api.native-ship.invalid/value",
+            "sample": "https://my-app.example.com/webhooks/sendpilot",
+            "example": "https://my-app.example.com/webhooks/sendpilot",
             "type": "string",
             "required": false
           }
@@ -1533,8 +2238,11 @@
         "fields": [
           {
             "name": "created_at",
-            "type": "string",
-            "format": "date-time"
+            "type": "string"
+          },
+          {
+            "name": "estimated_quota",
+            "type": "number"
           },
           {
             "name": "id",
@@ -1551,6 +2259,7 @@
         ],
         "simplifiedFields": [
           "created_at",
+          "estimated_quota",
           "id",
           "name",
           "status"
@@ -1558,16 +2267,24 @@
       },
       "errors": [
         {
-          "status": "400",
-          "title": "Bad request"
+          "status": "401",
+          "title": "Invalid or missing API key"
         },
         {
-          "status": "401",
-          "title": "Unauthorized"
+          "status": "403",
+          "title": "Insufficient quota"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
+        },
+        {
+          "status": "500",
+          "title": "Internal server error"
         }
       ],
       "requestPlan": {
-        "operationId": "createLeadDatabaseSearch",
+        "operationId": "leadDatabase.startSearch",
         "method": "POST",
         "path": "/v1/lead-database/searches",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -1601,7 +2318,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1614,8 +2331,11 @@
           "fields": [
             {
               "name": "created_at",
-              "type": "string",
-              "format": "date-time"
+              "type": "string"
+            },
+            {
+              "name": "estimated_quota",
+              "type": "number"
             },
             {
               "name": "id",
@@ -1632,6 +2352,7 @@
           ],
           "simplifiedFields": [
             "created_at",
+            "estimated_quota",
             "id",
             "name",
             "status"
@@ -1639,12 +2360,20 @@
         },
         "errors": [
           {
-            "status": "400",
-            "title": "Bad request"
+            "status": "401",
+            "title": "Invalid or missing API key"
           },
           {
-            "status": "401",
-            "title": "Unauthorized"
+            "status": "403",
+            "title": "Insufficient quota"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
+          },
+          {
+            "status": "500",
+            "title": "Internal server error"
           }
         ],
         "unsupportedSemantics": [
@@ -1658,14 +2387,14 @@
       ]
     },
     {
-      "operationId": "getLeadDatabaseSearchResults",
+      "operationId": "leadExtractor.getResults",
       "method": "GET",
-      "path": "/v1/lead-database/searches/{id}/results",
+      "path": "/v1/lead-extractor/campaigns/{id}/results",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -1680,19 +2409,27 @@
           "arrayFormat": "indices"
         },
         {
-          "name": "page",
-          "inputName": "page",
-          "sample": 1,
-          "default": 1,
+          "name": "limit",
+          "inputName": "limit",
+          "sample": 100,
+          "default": 100,
           "location": "query",
           "required": false,
           "arrayFormat": "indices"
         },
         {
-          "name": "limit",
-          "inputName": "limit",
-          "sample": 50,
-          "default": 50,
+          "name": "offset",
+          "inputName": "offset",
+          "sample": 0,
+          "default": 0,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "enriched_only",
+          "inputName": "enriched_only",
+          "sample": true,
           "location": "query",
           "required": false,
           "arrayFormat": "indices"
@@ -1710,54 +2447,72 @@
       "response": {
         "fields": [
           {
-            "name": "id",
+            "name": "campaign_id",
             "type": "string"
           },
           {
-            "name": "pagination",
-            "type": "object"
+            "name": "has_more",
+            "type": "boolean"
           },
           {
-            "name": "results",
+            "name": "leads",
             "type": "array"
           },
           {
-            "name": "status",
-            "type": "string"
+            "name": "limit",
+            "type": "number"
+          },
+          {
+            "name": "offset",
+            "type": "number"
+          },
+          {
+            "name": "total",
+            "type": "number"
           }
         ],
         "simplifiedFields": [
-          "id",
-          "pagination",
-          "results",
-          "status"
+          "campaign_id",
+          "has_more",
+          "leads",
+          "limit",
+          "offset",
+          "total"
         ]
       },
       "errors": [
         {
           "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid or missing API key"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Campaign not found"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
         }
       ],
       "requestPlan": {
-        "operationId": "getLeadDatabaseSearchResults",
+        "operationId": "leadExtractor.getResults",
         "method": "GET",
-        "path": "/v1/lead-database/searches/{id}/results",
+        "path": "/v1/lead-extractor/campaigns/{id}/results",
         "serverId": "documentServer1HttpsApiSendpilotAi",
         "request": {
           "method": "GET",
-          "url": "=/v1/lead-database/searches/{{$parameter[\"id\"]}}/results",
+          "url": "=/v1/lead-extractor/campaigns/{{$parameter[\"id\"]}}/results",
           "query": [
             {
-              "name": "page",
+              "name": "limit",
               "source": "additionalFields"
             },
             {
-              "name": "limit",
+              "name": "offset",
+              "source": "additionalFields"
+            },
+            {
+              "name": "enriched_only",
               "source": "additionalFields"
             }
           ],
@@ -1770,7 +2525,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1782,37 +2537,51 @@
         "response": {
           "fields": [
             {
-              "name": "id",
+              "name": "campaign_id",
               "type": "string"
             },
             {
-              "name": "pagination",
-              "type": "object"
+              "name": "has_more",
+              "type": "boolean"
             },
             {
-              "name": "results",
+              "name": "leads",
               "type": "array"
             },
             {
-              "name": "status",
-              "type": "string"
+              "name": "limit",
+              "type": "number"
+            },
+            {
+              "name": "offset",
+              "type": "number"
+            },
+            {
+              "name": "total",
+              "type": "number"
             }
           ],
           "simplifiedFields": [
-            "id",
-            "pagination",
-            "results",
-            "status"
+            "campaign_id",
+            "has_more",
+            "leads",
+            "limit",
+            "offset",
+            "total"
           ]
         },
         "errors": [
           {
             "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid or missing API key"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Campaign not found"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
           }
         ],
         "unsupportedSemantics": []
@@ -1824,14 +2593,14 @@
       ]
     },
     {
-      "operationId": "createLeadExtractorCampaign",
+      "operationId": "leadExtractor.startExtraction",
       "method": "POST",
       "path": "/v1/lead-extractor/campaigns",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -1844,21 +2613,20 @@
           {
             "name": "limit",
             "inputName": "limit",
-            "sample": 2,
-            "type": "integer",
+            "sample": 2.5,
+            "type": "number",
             "required": true
           },
           {
             "name": "mode",
             "inputName": "mode",
             "sample": "extraction_only",
-            "default": "extraction_only",
             "enum": [
               "extraction_only",
               "with_enrichment"
             ],
             "type": "string",
-            "required": false
+            "required": true
           },
           {
             "name": "name",
@@ -1871,13 +2639,12 @@
             "name": "url_type",
             "inputName": "url_type",
             "sample": "linkedin_search",
-            "default": "linkedin_search",
             "enum": [
               "linkedin_search",
               "sales_navigator"
             ],
             "type": "string",
-            "required": false
+            "required": true
           },
           {
             "name": "urls",
@@ -1887,6 +2654,14 @@
             ],
             "type": "array",
             "required": true
+          },
+          {
+            "name": "webhook_url",
+            "inputName": "webhook_url",
+            "sample": "https://my-app.example.com/webhooks/sendpilot",
+            "example": "https://my-app.example.com/webhooks/sendpilot",
+            "type": "string",
+            "required": false
           }
         ]
       },
@@ -1898,12 +2673,11 @@
         "fields": [
           {
             "name": "created_at",
-            "type": "string",
-            "format": "date-time"
+            "type": "string"
           },
           {
             "name": "estimated_credits",
-            "type": "integer"
+            "type": "number"
           },
           {
             "name": "id",
@@ -1929,15 +2703,23 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
+          "title": "Invalid request parameters"
         },
         {
           "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid or missing API key"
+        },
+        {
+          "status": "403",
+          "title": "Insufficient credits"
+        },
+        {
+          "status": "429",
+          "title": "Rate limit exceeded"
         }
       ],
       "requestPlan": {
-        "operationId": "createLeadExtractorCampaign",
+        "operationId": "leadExtractor.startExtraction",
         "method": "POST",
         "path": "/v1/lead-extractor/campaigns",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -1952,7 +2734,7 @@
             },
             {
               "name": "mode",
-              "source": "additionalFields"
+              "source": "parameter"
             },
             {
               "name": "name",
@@ -1960,11 +2742,15 @@
             },
             {
               "name": "url_type",
-              "source": "additionalFields"
+              "source": "parameter"
             },
             {
               "name": "urls",
               "source": "parameter"
+            },
+            {
+              "name": "webhook_url",
+              "source": "additionalFields"
             }
           ],
           "headers": {
@@ -1975,7 +2761,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -1988,12 +2774,11 @@
           "fields": [
             {
               "name": "created_at",
-              "type": "string",
-              "format": "date-time"
+              "type": "string"
             },
             {
               "name": "estimated_credits",
-              "type": "integer"
+              "type": "number"
             },
             {
               "name": "id",
@@ -2019,11 +2804,19 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
+            "title": "Invalid request parameters"
           },
           {
             "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid or missing API key"
+          },
+          {
+            "status": "403",
+            "title": "Insufficient credits"
+          },
+          {
+            "status": "429",
+            "title": "Rate limit exceeded"
           }
         ],
         "unsupportedSemantics": [
@@ -2037,160 +2830,14 @@
       ]
     },
     {
-      "operationId": "getLeadExtractorCampaignResults",
-      "method": "GET",
-      "path": "/v1/lead-extractor/campaigns/{id}/results",
-      "serverId": "documentServer1HttpsApiSendpilotAi",
-      "authentication": [
-        {
-          "schemes": [
-            "ApiKeyAuth"
-          ],
-          "scopes": []
-        }
-      ],
-      "parameters": [
-        {
-          "name": "id",
-          "inputName": "id",
-          "sample": "value/id",
-          "location": "path",
-          "required": true,
-          "arrayFormat": "indices"
-        },
-        {
-          "name": "offset",
-          "inputName": "offset",
-          "sample": 0,
-          "default": 0,
-          "location": "query",
-          "required": false,
-          "arrayFormat": "indices"
-        },
-        {
-          "name": "limit",
-          "inputName": "limit",
-          "sample": 100,
-          "default": 100,
-          "location": "query",
-          "required": false,
-          "arrayFormat": "indices"
-        }
-      ],
-      "request": {
-        "contentType": "application/json",
-        "representation": "structured",
-        "fields": []
-      },
-      "retry": {},
-      "pagination": {
-        "style": "none"
-      },
-      "response": {
-        "fields": [
-          {
-            "name": "leads",
-            "type": "array"
-          },
-          {
-            "name": "pagination",
-            "type": "object"
-          }
-        ],
-        "simplifiedFields": [
-          "leads",
-          "pagination"
-        ]
-      },
-      "errors": [
-        {
-          "status": "401",
-          "title": "Unauthorized"
-        },
-        {
-          "status": "404",
-          "title": "Resource not found"
-        }
-      ],
-      "requestPlan": {
-        "operationId": "getLeadExtractorCampaignResults",
-        "method": "GET",
-        "path": "/v1/lead-extractor/campaigns/{id}/results",
-        "serverId": "documentServer1HttpsApiSendpilotAi",
-        "request": {
-          "method": "GET",
-          "url": "=/v1/lead-extractor/campaigns/{{$parameter[\"id\"]}}/results",
-          "query": [
-            {
-              "name": "offset",
-              "source": "additionalFields"
-            },
-            {
-              "name": "limit",
-              "source": "additionalFields"
-            }
-          ],
-          "body": [],
-          "headers": {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-          }
-        },
-        "authentication": [
-          {
-            "schemes": [
-              "ApiKeyAuth"
-            ],
-            "scopes": []
-          }
-        ],
-        "retry": {},
-        "pagination": {
-          "style": "none"
-        },
-        "response": {
-          "fields": [
-            {
-              "name": "leads",
-              "type": "array"
-            },
-            {
-              "name": "pagination",
-              "type": "object"
-            }
-          ],
-          "simplifiedFields": [
-            "leads",
-            "pagination"
-          ]
-        },
-        "errors": [
-          {
-            "status": "401",
-            "title": "Unauthorized"
-          },
-          {
-            "status": "404",
-            "title": "Resource not found"
-          }
-        ],
-        "unsupportedSemantics": []
-      },
-      "assertions": [
-        "retry attempts preserve request and pagination state until a response succeeds",
-        "pagination advances only after a completed page response",
-        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
-      ]
-    },
-    {
-      "operationId": "addLeadsToCampaign",
+      "operationId": "leads.add",
       "method": "POST",
       "path": "/v1/leads",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -2203,7 +2850,8 @@
           {
             "name": "campaignId",
             "inputName": "campaignId",
-            "sample": "value/id",
+            "sample": "cmobr5lei0000u1h02ezf5itt",
+            "example": "cmobr5lei0000u1h02ezf5itt",
             "type": "string",
             "required": true
           },
@@ -2212,12 +2860,23 @@
             "inputName": "leads",
             "sample": [
               {
-                "company": "TechCorp",
+                "company": "Acme Corp",
                 "firstName": "John",
                 "industry": {},
                 "lastName": "Doe",
-                "linkedinUrl": "https://www.linkedin.com/in/johndoe",
+                "linkedinUrl": "https://www.linkedin.com/in/johndoe/",
                 "region": {},
+                "title": "VP of Engineering"
+              }
+            ],
+            "example": [
+              {
+                "company": "Acme Corp",
+                "firstName": "John",
+                "industry": "SaaS",
+                "lastName": "Doe",
+                "linkedinUrl": "https://www.linkedin.com/in/johndoe/",
+                "region": "EMEA",
                 "title": "VP of Engineering"
               }
             ],
@@ -2234,7 +2893,7 @@
         "fields": [
           {
             "name": "duplicatesSkipped",
-            "type": "integer"
+            "type": "number"
           },
           {
             "name": "errors",
@@ -2242,11 +2901,11 @@
           },
           {
             "name": "invalidEntries",
-            "type": "integer"
+            "type": "number"
           },
           {
             "name": "leadsAdded",
-            "type": "integer"
+            "type": "number"
           },
           {
             "name": "success",
@@ -2264,19 +2923,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
-        },
-        {
-          "status": "401",
-          "title": "Unauthorized"
+          "title": "Invalid request data"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Campaign not found"
         }
       ],
       "requestPlan": {
-        "operationId": "addLeadsToCampaign",
+        "operationId": "leads.add",
         "method": "POST",
         "path": "/v1/leads",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -2302,7 +2957,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -2315,7 +2970,7 @@
           "fields": [
             {
               "name": "duplicatesSkipped",
-              "type": "integer"
+              "type": "number"
             },
             {
               "name": "errors",
@@ -2323,11 +2978,11 @@
             },
             {
               "name": "invalidEntries",
-              "type": "integer"
+              "type": "number"
             },
             {
               "name": "leadsAdded",
-              "type": "integer"
+              "type": "number"
             },
             {
               "name": "success",
@@ -2345,15 +3000,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
-          },
-          {
-            "status": "401",
-            "title": "Unauthorized"
+            "title": "Invalid request data"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Campaign not found"
           }
         ],
         "unsupportedSemantics": [
@@ -2367,14 +3018,326 @@
       ]
     },
     {
-      "operationId": "listLeads",
+      "operationId": "leads.get",
+      "method": "GET",
+      "path": "/v1/leads/{id}",
+      "serverId": "documentServer1HttpsApiSendpilotAi",
+      "authentication": [
+        {
+          "schemes": [
+            "api-key"
+          ],
+          "scopes": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "inputName": "id",
+          "sample": "value/id",
+          "location": "path",
+          "required": true,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "full",
+          "inputName": "full",
+          "sample": true,
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        }
+      ],
+      "request": {
+        "contentType": "application/json",
+        "representation": "structured",
+        "fields": []
+      },
+      "retry": {},
+      "pagination": {
+        "style": "none"
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "about",
+            "type": "string"
+          },
+          {
+            "name": "campaignId",
+            "type": "string"
+          },
+          {
+            "name": "company",
+            "type": "string"
+          },
+          {
+            "name": "connectionCount",
+            "type": "number"
+          },
+          {
+            "name": "createdAt",
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "customLeadStatus",
+            "type": "string"
+          },
+          {
+            "name": "data",
+            "type": "object"
+          },
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "firstName",
+            "type": "string"
+          },
+          {
+            "name": "followerCount",
+            "type": "number"
+          },
+          {
+            "name": "id",
+            "type": "string"
+          },
+          {
+            "name": "industry",
+            "type": "string"
+          },
+          {
+            "name": "isOpenProfile",
+            "type": "boolean"
+          },
+          {
+            "name": "isPremium",
+            "type": "boolean"
+          },
+          {
+            "name": "lastName",
+            "type": "string"
+          },
+          {
+            "name": "linkedinUrl",
+            "type": "string"
+          },
+          {
+            "name": "location",
+            "type": "string"
+          },
+          {
+            "name": "profilePictureUrl",
+            "type": "string"
+          },
+          {
+            "name": "senderId",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "website",
+            "type": "string"
+          }
+        ],
+        "simplifiedFields": [
+          "id",
+          "title",
+          "status",
+          "email",
+          "createdAt",
+          "updatedAt",
+          "about",
+          "campaignId",
+          "company",
+          "connectionCount"
+        ]
+      },
+      "errors": [
+        {
+          "status": "404",
+          "title": "Lead not found"
+        }
+      ],
+      "requestPlan": {
+        "operationId": "leads.get",
+        "method": "GET",
+        "path": "/v1/leads/{id}",
+        "serverId": "documentServer1HttpsApiSendpilotAi",
+        "request": {
+          "method": "GET",
+          "url": "=/v1/leads/{{$parameter[\"id\"]}}",
+          "query": [
+            {
+              "name": "full",
+              "source": "additionalFields"
+            }
+          ],
+          "body": [],
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          }
+        },
+        "authentication": [
+          {
+            "schemes": [
+              "api-key"
+            ],
+            "scopes": []
+          }
+        ],
+        "retry": {},
+        "pagination": {
+          "style": "none"
+        },
+        "response": {
+          "fields": [
+            {
+              "name": "about",
+              "type": "string"
+            },
+            {
+              "name": "campaignId",
+              "type": "string"
+            },
+            {
+              "name": "company",
+              "type": "string"
+            },
+            {
+              "name": "connectionCount",
+              "type": "number"
+            },
+            {
+              "name": "createdAt",
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "name": "customLeadStatus",
+              "type": "string"
+            },
+            {
+              "name": "data",
+              "type": "object"
+            },
+            {
+              "name": "email",
+              "type": "string"
+            },
+            {
+              "name": "firstName",
+              "type": "string"
+            },
+            {
+              "name": "followerCount",
+              "type": "number"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "industry",
+              "type": "string"
+            },
+            {
+              "name": "isOpenProfile",
+              "type": "boolean"
+            },
+            {
+              "name": "isPremium",
+              "type": "boolean"
+            },
+            {
+              "name": "lastName",
+              "type": "string"
+            },
+            {
+              "name": "linkedinUrl",
+              "type": "string"
+            },
+            {
+              "name": "location",
+              "type": "string"
+            },
+            {
+              "name": "profilePictureUrl",
+              "type": "string"
+            },
+            {
+              "name": "senderId",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "updatedAt",
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "name": "website",
+              "type": "string"
+            }
+          ],
+          "simplifiedFields": [
+            "id",
+            "title",
+            "status",
+            "email",
+            "createdAt",
+            "updatedAt",
+            "about",
+            "campaignId",
+            "company",
+            "connectionCount"
+          ]
+        },
+        "errors": [
+          {
+            "status": "404",
+            "title": "Lead not found"
+          }
+        ],
+        "unsupportedSemantics": []
+      },
+      "assertions": [
+        "retry attempts preserve request and pagination state until a response succeeds",
+        "pagination advances only after a completed page response",
+        "pagination terminates within declared page, item, elapsed-time, memory, repeated-cursor, and repeated-page budgets"
+      ]
+    },
+    {
+      "operationId": "leads.list",
       "method": "GET",
       "path": "/v1/leads",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -2383,9 +3346,10 @@
         {
           "name": "campaignId",
           "inputName": "campaignId",
-          "sample": "value/id",
+          "sample": "cmobr5lei0000u1h02ezf5itt",
+          "example": "cmobr5lei0000u1h02ezf5itt",
           "location": "query",
-          "required": false,
+          "required": true,
           "arrayFormat": "indices"
         },
         {
@@ -2394,12 +3358,51 @@
           "sample": "PENDING",
           "enum": [
             "PENDING",
+            "PROCESSING",
+            "MESSAGE_SENT",
             "CONNECTION_SENT",
             "CONNECTION_ACCEPTED",
-            "MESSAGE_SENT",
+            "CONNECTION_ALREADY_SENT",
             "REPLY_RECEIVED",
-            "DONE"
+            "FOLLOWUP_SENT",
+            "BLOCKED",
+            "PROFILE_UNREACHABLE",
+            "RATE_LIMITED",
+            "FAILED",
+            "SUCCESS",
+            "UNSUBSCRIBED",
+            "IRRELEVANT",
+            "SKIPPED",
+            "DONE",
+            "MEETING_BOOKED",
+            "OPPORTUNITY",
+            "LIKED_POST",
+            "MESSAGE_SCHEDULED",
+            "CONNECTION_SCHEDULED",
+            "LIKE_POST_SCHEDULED",
+            "VIEW_PROFILE_SCHEDULED",
+            "CONNECTED",
+            "CONNECTION_WITHDRAWN",
+            "WITHDRAWAL_SCHEDULED",
+            "WITHDRAWAL_NOT_POSSIBLE",
+            "NOT_CONNECTED",
+            "ICP_MATCH",
+            "ICP_NOT_MATCH",
+            "PROFILE_VIEWED",
+            "STARTED",
+            "STOPPED",
+            "WAITING"
           ],
+          "location": "query",
+          "required": false,
+          "arrayFormat": "indices"
+        },
+        {
+          "name": "full",
+          "inputName": "full",
+          "sample": true,
+          "default": false,
+          "example": true,
           "location": "query",
           "required": false,
           "arrayFormat": "indices"
@@ -2448,14 +3451,9 @@
           "pagination"
         ]
       },
-      "errors": [
-        {
-          "status": "401",
-          "title": "Unauthorized"
-        }
-      ],
+      "errors": [],
       "requestPlan": {
-        "operationId": "listLeads",
+        "operationId": "leads.list",
         "method": "GET",
         "path": "/v1/leads",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -2465,10 +3463,14 @@
           "query": [
             {
               "name": "campaignId",
-              "source": "additionalFields"
+              "source": "parameter"
             },
             {
               "name": "status",
+              "source": "additionalFields"
+            },
+            {
+              "name": "full",
               "source": "additionalFields"
             },
             {
@@ -2489,7 +3491,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -2514,12 +3516,7 @@
             "pagination"
           ]
         },
-        "errors": [
-          {
-            "status": "401",
-            "title": "Unauthorized"
-          }
-        ],
+        "errors": [],
         "unsupportedSemantics": []
       },
       "assertions": [
@@ -2529,14 +3526,14 @@
       ]
     },
     {
-      "operationId": "updateLeadStatus",
+      "operationId": "leads.updateStatus",
       "method": "PATCH",
       "path": "/v1/leads/{id}/status",
       "serverId": "documentServer1HttpsApiSendpilotAi",
       "authentication": [
         {
           "schemes": [
-            "ApiKeyAuth"
+            "api-key"
           ],
           "scopes": []
         }
@@ -2556,26 +3553,45 @@
         "representation": "structured",
         "fields": [
           {
+            "name": "customLeadStatus",
+            "inputName": "customLeadStatus",
+            "sample": "INTERESTED",
+            "example": "INTERESTED",
+            "enum": [
+              "LEAD",
+              "INTERESTED",
+              "MEETING_BOOKED",
+              "MEETING_COMPLETE_NOT_CLOSED",
+              "CLOSED",
+              "WRONG_PERSON",
+              "NOT_INTERESTED",
+              "NO_RESPONSE"
+            ],
+            "type": "string",
+            "required": false
+          },
+          {
             "name": "note",
             "inputName": "note",
-            "sample": "value/id",
+            "sample": "Customer showed interest in demo",
+            "example": "Customer showed interest in demo",
             "type": "string",
             "required": false
           },
           {
             "name": "status",
             "inputName": "status",
-            "sample": "PENDING",
+            "sample": "MEETING_BOOKED",
+            "example": "MEETING_BOOKED",
             "enum": [
-              "PENDING",
-              "CONNECTION_SENT",
-              "CONNECTION_ACCEPTED",
-              "MESSAGE_SENT",
-              "REPLY_RECEIVED",
-              "DONE"
+              "OPPORTUNITY",
+              "MEETING_BOOKED",
+              "DONE",
+              "UNSUBSCRIBED",
+              "IRRELEVANT"
             ],
             "type": "string",
-            "required": true
+            "required": false
           }
         ]
       },
@@ -2612,19 +3628,15 @@
       "errors": [
         {
           "status": "400",
-          "title": "Bad request"
-        },
-        {
-          "status": "401",
-          "title": "Unauthorized"
+          "title": "At least one of status or customLeadStatus is required"
         },
         {
           "status": "404",
-          "title": "Resource not found"
+          "title": "Lead not found"
         }
       ],
       "requestPlan": {
-        "operationId": "updateLeadStatus",
+        "operationId": "leads.updateStatus",
         "method": "PATCH",
         "path": "/v1/leads/{id}/status",
         "serverId": "documentServer1HttpsApiSendpilotAi",
@@ -2634,12 +3646,16 @@
           "query": [],
           "body": [
             {
+              "name": "customLeadStatus",
+              "source": "additionalFields"
+            },
+            {
               "name": "note",
               "source": "additionalFields"
             },
             {
               "name": "status",
-              "source": "parameter"
+              "source": "additionalFields"
             }
           ],
           "headers": {
@@ -2650,7 +3666,7 @@
         "authentication": [
           {
             "schemes": [
-              "ApiKeyAuth"
+              "api-key"
             ],
             "scopes": []
           }
@@ -2688,15 +3704,11 @@
         "errors": [
           {
             "status": "400",
-            "title": "Bad request"
-          },
-          {
-            "status": "401",
-            "title": "Unauthorized"
+            "title": "At least one of status or customLeadStatus is required"
           },
           {
             "status": "404",
-            "title": "Resource not found"
+            "title": "Lead not found"
           }
         ],
         "unsupportedSemantics": []
@@ -2710,10 +3722,10 @@
   ],
   "triggerFixtures": [
     {
-      "operationId": "getCampaign",
+      "operationId": "campaigns.get",
       "trigger": {
         "type": "polling",
-        "sourceOperation": "getCampaign",
+        "sourceOperation": "campaigns.get",
         "cursorParameter": "updatedAt",
         "defaultPollInterval": "5m"
       },
@@ -2722,10 +3734,10 @@
       ]
     },
     {
-      "operationId": "getLeadDatabaseSearchStatus",
+      "operationId": "leadDatabase.getSearchStatus",
       "trigger": {
         "type": "polling",
-        "sourceOperation": "getLeadDatabaseSearchStatus",
+        "sourceOperation": "leadDatabase.getSearchStatus",
         "cursorParameter": "created_at",
         "defaultPollInterval": "5m"
       },
@@ -2734,23 +3746,11 @@
       ]
     },
     {
-      "operationId": "getLeadExtractorCampaignStatus",
+      "operationId": "leadExtractor.getStatus",
       "trigger": {
         "type": "polling",
-        "sourceOperation": "getLeadExtractorCampaignStatus",
+        "sourceOperation": "leadExtractor.getStatus",
         "cursorParameter": "created_at",
-        "defaultPollInterval": "5m"
-      },
-      "assertions": [
-        "polling trigger cursor, advancement, first-poll, empty-result, restart, deduplication, deduplication-retention, state-scope, and item-linking behavior follow the declared Trigger Contract"
-      ]
-    },
-    {
-      "operationId": "getLeadById",
-      "trigger": {
-        "type": "polling",
-        "sourceOperation": "getLeadById",
-        "cursorParameter": "updatedAt",
         "defaultPollInterval": "5m"
       },
       "assertions": [

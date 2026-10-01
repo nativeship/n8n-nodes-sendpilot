@@ -1,5 +1,6 @@
 {
   "author": {
+    "email": "work.bhshekhaliya@gmail.com",
     "name": "nativeship",
     "url": "https://github.com/nativeship"
   },
@@ -22,11 +23,6 @@
     "n8n-community-node-package"
   ],
   "license": "MIT",
-  "maintainers": [
-    {
-      "name": "nativeship"
-    }
-  ],
   "n8n": {
     "credentials": [
       "dist/credentials/SendpilotApi.credentials.js"
@@ -39,7 +35,7 @@
   },
   "name": "@nativeship/n8n-nodes-sendpilot",
   "nativeShip": {
-    "artifactSha256": "70663780b526effdf88ce84896980094ea527d8cb0db6715cd83cbc88b1c24c5"
+    "artifactSha256": "64d30692d10101dd1b63631f5d8f334f9f2757345557369c8545dca5e98e849e"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
@@ -57,5 +53,5 @@
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix"
   },
-  "version": "1.0.1"
+  "version": "2.0.0"
 }

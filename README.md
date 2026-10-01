@@ -2,7 +2,7 @@
 
 Manage LinkedIn outreach campaigns, track lead statuses, and monitor credit balances with SendPilot
 
-Generated from OpenAPI 1.0.0 with template 1.1.0. Generated files are platform-managed and will be overwritten during regeneration.
+Generated from OpenAPI 1.0 with template 1.1.0. Generated files are platform-managed and will be overwritten during regeneration.
 
 ## Authentication
 
@@ -22,10 +22,19 @@ Configure the generated API key credential in n8n before using the node.
 - `GET /v1/credits` - Get Credits
   - Retry Contract: none
   - Pagination Contract: none
-- `GET /v1/inbox/conversations/{conversationId}/messages` - Get Conversation Messages
+- `GET /v1/lead-database/filters` - List lead filters and values
+  - Retry Contract: none
+  - Pagination Contract: none
+- `GET /v1/senders/quotas` - Get daily LinkedIn quotas per sender
+  - Retry Contract: none
+  - Pagination Contract: none
+- `GET /v1/me` - Get current API key and workspace
   - Retry Contract: none
   - Pagination Contract: none
 - `GET /v1/inbox/conversations` - Get Many Conversations
+  - Retry Contract: none
+  - Pagination Contract: none
+- `GET /v1/inbox/conversations/{conversationId}/messages` - Get Conversation Messages
   - Retry Contract: none
   - Pagination Contract: none
 - `GET /v1/inbox/senders` - Get Many Senders
@@ -40,22 +49,22 @@ Configure the generated API key credential in n8n before using the node.
 - `POST /v1/inbox/send/lead/{leadId}` - Send Message to Lead
   - Retry Contract: none
   - Pagination Contract: none
-- `POST /v1/lead-database/searches` - Create Database Search
-  - Retry Contract: none
-  - Pagination Contract: none
 - `GET /v1/lead-database/searches/{id}/results` - Get Database Search Results
   - Retry Contract: none
   - Pagination Contract: none
 - `GET /v1/lead-database/searches/{id}/status` - Get Database Search Status
   - Retry Contract: none
   - Pagination Contract: none
-- `POST /v1/lead-extractor/campaigns` - Create Lead Extractor Campaign
+- `POST /v1/lead-database/searches` - Create Database Search
   - Retry Contract: none
   - Pagination Contract: none
 - `GET /v1/lead-extractor/campaigns/{id}/results` - Get Extractor Campaign Results
   - Retry Contract: none
   - Pagination Contract: none
 - `GET /v1/lead-extractor/campaigns/{id}/status` - Get Extractor Campaign Status
+  - Retry Contract: none
+  - Pagination Contract: none
+- `POST /v1/lead-extractor/campaigns` - Create Lead Extractor Campaign
   - Retry Contract: none
   - Pagination Contract: none
 - `POST /v1/leads` - Add Leads to Campaign

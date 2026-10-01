@@ -1,5 +1,5 @@
 import { NodeConnectionTypes, NodeApiError, NodeOperationError, type IDataObject, type IExecuteFunctions, type IHttpRequestOptions, type INodeExecutionData, type INodeType, type INodeTypeDescription, type JsonObject } from "n8n-workflow";
-import { requestWithRetry, resolveServerBaseUrl } from "../../shared/http";
+import { requestWithRetry } from "../../shared/http";
 
 // Generated with ts-morph
 type CredentialApplication = { credentialType: string; type: 'apiKey' | 'basic' | 'bearer' | 'oauth2' | 'custom'; location?: 'header' | 'query'; parameter?: string; injections?: Array<{ target: 'header' | 'query' | 'body'; name: string; value: string }> };
@@ -16,6 +16,7 @@ type BodyFieldContract = {
   name: string;
   displayName?: string;
   description?: string;
+  placeholder?: string;
   type?: string;
   format?: string;
   required?: boolean;
@@ -164,29 +165,36 @@ export class Sendpilot implements INodeType {
         version: [
             1
         ],
-        subtitle: "={{$parameter[\"operation\"] + \": \" + $parameter[\"resource\"]}}",
+        subtitle: "={{((JSON.parse(\"\\u007b\\\"campaigns\\\":\\u007b\\\"campaigns.get\\\":\\\"getCampaign: campaign\\\",\\\"campaigns.list\\\":\\\"listCampaigns: campaign\\\",\\\"campaigns.update\\\":\\\"updateCampaign: campaign\\\"\\u007d,\\\"credits\\\":\\u007b\\\"credits.get\\\":\\\"getCredits: credit\\\"\\u007d,\\\"externalApiLeadDatabase\\\":\\u007b\\\"leadDatabase.filters\\\":\\\"listLeadFiltersAndValues: externalApiLeadDatabase\\\"\\u007d,\\\"externalApiSenders\\\":\\u007b\\\"senders.quotas\\\":\\\"getDailyLinkedInQuotasPerSender: externalApiSender\\\"\\u007d,\\\"externalApiWorkspace\\\":\\u007b\\\"workspace.me\\\":\\\"getCurrentApiKeyAndWorkspace: externalApiWorkspace\\\"\\u007d,\\\"inbox\\\":\\u007b\\\"inbox.listConversations\\\":\\\"getManyConversations: inbox\\\",\\\"inbox.listMessages\\\":\\\"getConversationMessages: inbox\\\",\\\"inbox.listSenders\\\":\\\"getManySenders: inbox\\\",\\\"inbox.sendConnectionRequest\\\":\\\"sendConnectionRequest: inbox\\\",\\\"inbox.sendMessage\\\":\\\"sendMessage: inbox\\\",\\\"inbox.sendMessageToLead\\\":\\\"sendMessageToLead: inbox\\\"\\u007d,\\\"leadDatabase\\\":\\u007b\\\"leadDatabase.getSearchResults\\\":\\\"getDatabaseSearchResults: leadDatabase\\\",\\\"leadDatabase.getSearchStatus\\\":\\\"getDatabaseSearchStatus: leadDatabase\\\",\\\"leadDatabase.startSearch\\\":\\\"createDatabaseSearch: leadDatabase\\\"\\u007d,\\\"leadExtractor\\\":\\u007b\\\"leadExtractor.getResults\\\":\\\"getExtractorCampaignResults: leadExtractor\\\",\\\"leadExtractor.getStatus\\\":\\\"getExtractorCampaignStatus: leadExtractor\\\",\\\"leadExtractor.startExtraction\\\":\\\"createLeadExtractorCampaign: leadExtractor\\\"\\u007d,\\\"leads\\\":\\u007b\\\"leads.add\\\":\\\"addLeadsToCampaign: lead\\\",\\\"leads.get\\\":\\\"getLead: lead\\\",\\\"leads.list\\\":\\\"getManyLeads: lead\\\",\\\"leads.updateStatus\\\":\\\"updateLeadStatus: lead\\\"\\u007d\\u007d\"))[$parameter[\"resource\"]] || {})[$parameter[\"operation\"]] || ($parameter[\"operation\"] + \": \" + $parameter[\"resource\"])}}",
         description: "Manage LinkedIn outreach campaigns, track lead statuses, and monitor credit balances with SendPilot",
+        documentationUrl: "https://nativeship.io/nodes/@nativeship/n8n-nodes-sendpilot",
         hints: [
             {
-                message: "Operation \"listCampaigns\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
+                message: "Operation \"campaigns.list\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
                 type: "warning",
                 location: "inputPane",
                 whenToDisplay: "always"
             },
             {
-                message: "Operation \"getLeadDatabaseSearchResults\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
+                message: "Operation \"leadDatabase.filters\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
                 type: "warning",
                 location: "inputPane",
                 whenToDisplay: "always"
             },
             {
-                message: "Operation \"getLeadExtractorCampaignResults\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
+                message: "Operation \"leadDatabase.getSearchResults\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
                 type: "warning",
                 location: "inputPane",
                 whenToDisplay: "always"
             },
             {
-                message: "Operation \"listLeads\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
+                message: "Operation \"leadExtractor.getResults\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
+                type: "warning",
+                location: "inputPane",
+                whenToDisplay: "always"
+            },
+            {
+                message: "Operation \"leads.list\" looks paginated, but no explicit safe Pagination Contract is available. The generated operation remains single-page until an explicit bounded Pagination Contract is provided.",
                 type: "warning",
                 location: "inputPane",
                 whenToDisplay: "always"
@@ -225,6 +233,18 @@ export class Sendpilot implements INodeType {
                         value: "credits"
                     },
                     {
+                        name: "External API Lead Database",
+                        value: "externalApiLeadDatabase"
+                    },
+                    {
+                        name: "External API Sender",
+                        value: "externalApiSenders"
+                    },
+                    {
+                        name: "External API Workspace",
+                        value: "externalApiWorkspace"
+                    },
+                    {
                         name: "Inbox",
                         value: "inbox"
                     },
@@ -254,23 +274,23 @@ export class Sendpilot implements INodeType {
                         ]
                     }
                 },
-                default: "getCampaign",
+                default: "campaigns.get",
                 options: [
                     {
                         name: "Get",
-                        value: "getCampaign",
+                        value: "campaigns.get",
                         action: "Get campaign",
                         description: "Retrieves detailed configuration, lead metrics, and connected sender accounts for a specific campaign"
                     },
                     {
                         name: "List",
-                        value: "listCampaigns",
+                        value: "campaigns.list",
                         action: "List campaigns",
                         description: "Retrieves a paginated list of linkedin outreach campaigns filtered by status"
                     },
                     {
                         name: "Update",
-                        value: "updateCampaign",
+                        value: "campaigns.update",
                         action: "Update campaign",
                         description: "Pauses or resumes an existing outreach campaign"
                     }
@@ -289,7 +309,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "getCampaign"
+                            "campaigns.get"
                         ]
                     }
                 }
@@ -306,7 +326,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "getCampaign"
+                            "campaigns.get"
                         ]
                     }
                 },
@@ -337,10 +357,10 @@ export class Sendpilot implements INodeType {
                     "name",
                     "status",
                     "type",
-                    "description",
                     "createdAt",
                     "updatedAt",
                     "connectionsSent",
+                    "leadsContacted",
                     "messagesSent",
                     "repliesReceived"
                 ],
@@ -350,7 +370,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "getCampaign"
+                            "campaigns.get"
                         ],
                         outputMode: [
                             "selected"
@@ -367,12 +387,12 @@ export class Sendpilot implements INodeType {
                         value: "createdAt"
                     },
                     {
-                        name: "Description",
-                        value: "description"
-                    },
-                    {
                         name: "ID",
                         value: "id"
+                    },
+                    {
+                        name: "LeadsContacted",
+                        value: "leadsContacted"
                     },
                     {
                         name: "LinkedInSenderIds",
@@ -420,7 +440,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "listCampaigns"
+                            "campaigns.list"
                         ]
                     }
                 },
@@ -440,17 +460,18 @@ export class Sendpilot implements INodeType {
                         name: "page",
                         type: "number",
                         default: 1,
-                        description: "Page number",
+                        description: "Page number to return (starts at 1)",
                         typeOptions: {
-                            minValue: 1
+                            minValue: 1,
+                            maxValue: 100
                         }
                     },
                     {
                         displayName: "Status",
                         name: "status",
                         type: "options",
-                        default: "active",
-                        description: "Filter by campaign status",
+                        default: "all",
+                        description: "Filter campaigns by status",
                         options: [
                             {
                                 name: "Active",
@@ -489,7 +510,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "updateCampaign"
+                            "campaigns.update"
                         ]
                     }
                 }
@@ -500,7 +521,8 @@ export class Sendpilot implements INodeType {
                 type: "options",
                 default: "pause",
                 required: true,
-                description: "Operation on the campaign",
+                description: "Pause or resume the campaign",
+                placeholder: "e.g. pause",
                 options: [
                     {
                         name: "Pause",
@@ -519,7 +541,7 @@ export class Sendpilot implements INodeType {
                             "campaigns"
                         ],
                         operation: [
-                            "updateCampaign"
+                            "campaigns.update"
                         ]
                     }
                 }
@@ -536,11 +558,11 @@ export class Sendpilot implements INodeType {
                         ]
                     }
                 },
-                default: "getCredits",
+                default: "credits.get",
                 options: [
                     {
                         name: "Get",
-                        value: "getCredits",
+                        value: "credits.get",
                         action: "Get credits",
                         description: "Retrieves current credit balances, subscription quota, and usage across workspace features"
                     }
@@ -554,47 +576,214 @@ export class Sendpilot implements INodeType {
                 displayOptions: {
                     show: {
                         resource: [
+                            "externalApiLeadDatabase"
+                        ]
+                    }
+                },
+                default: "leadDatabase.filters",
+                options: [
+                    {
+                        name: "List Lead Filters And Values",
+                        value: "leadDatabase.filters",
+                        action: "List lead filters and values external API lead database",
+                        description: "Lists supported lead filters. you can also search and paginate the bundled value catalog. this endpoint does not start a search or use credits. external API - lead database."
+                    }
+                ]
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "externalApiLeadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.filters"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Filter",
+                        name: "filter",
+                        type: "string",
+                        default: "",
+                        description: "Name of the filter to retrieve. omit this parameter to list all supported filters."
+                    },
+                    {
+                        displayName: "Limit",
+                        name: "limit",
+                        type: "number",
+                        default: 50,
+                        description: "Max number of results to return",
+                        typeOptions: {
+                            minValue: 1
+                        }
+                    },
+                    {
+                        displayName: "Offset",
+                        name: "offset",
+                        type: "number",
+                        default: 0,
+                        description: "Number of catalog values to skip (starts at 0)",
+                        typeOptions: {
+                            minValue: 0,
+                            maxValue: 1000000
+                        }
+                    },
+                    {
+                        displayName: "Search",
+                        name: "search",
+                        type: "string",
+                        default: "",
+                        description: "Case-insensitive search across filter names and catalog values"
+                    }
+                ]
+            },
+            {
+                displayName: "Operation",
+                name: "operation",
+                type: "options",
+                noDataExpression: true,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "externalApiSenders"
+                        ]
+                    }
+                },
+                default: "senders.quotas",
+                options: [
+                    {
+                        name: "Get Daily LinkedIn Quotas Per Sender",
+                        value: "senders.quotas",
+                        action: "Get daily linkedin quotas per sender external API senders",
+                        description: "Returns each sender's daily connection, message, and like quotas, including usage, remaining amounts, and reset times. external API - senders."
+                    }
+                ]
+            },
+            {
+                displayName: "Operation",
+                name: "operation",
+                type: "options",
+                noDataExpression: true,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "externalApiWorkspace"
+                        ]
+                    }
+                },
+                default: "workspace.me",
+                options: [
+                    {
+                        name: "Get Current API Key And Workspace",
+                        value: "workspace.me",
+                        action: "Get current API key and workspace external API workspace",
+                        description: "Returns details about the current API key and its workspace, including subscription status, scopes, expiration time, and rate limits. external API - workspace."
+                    }
+                ]
+            },
+            {
+                displayName: "Operation",
+                name: "operation",
+                type: "options",
+                noDataExpression: true,
+                displayOptions: {
+                    show: {
+                        resource: [
                             "inbox"
                         ]
                     }
                 },
-                default: "getConversationMessages",
+                default: "inbox.listConversations",
                 options: [
                     {
                         name: "Get Conversation Messages",
-                        value: "getConversationMessages",
+                        value: "inbox.listMessages",
                         action: "Get conversation messages inbox",
                         description: "Retrieves message history and attachments for a specific linkedin conversation thread. inbox."
                     },
                     {
                         name: "Get Many Conversations",
-                        value: "listConversations",
+                        value: "inbox.listConversations",
                         action: "Get many conversations inbox",
                         description: "Retrieves linkedin message threads across connected sender accounts with continuation token pagination. inbox."
                     },
                     {
                         name: "Get Many Senders",
-                        value: "listSenders",
+                        value: "inbox.listSenders",
                         action: "Get many senders inbox",
                         description: "Retrieves connected linkedin sender accounts along with daily message limits and usage. inbox."
                     },
                     {
                         name: "Send Connection Request",
-                        value: "sendConnectionRequest",
+                        value: "inbox.sendConnectionRequest",
                         action: "Send connection request inbox",
                         description: "Dispatches a linkedin connection request with an optional note to a target profile. inbox."
                     },
                     {
                         name: "Send Message",
-                        value: "sendMessage",
+                        value: "inbox.sendMessage",
                         action: "Send message inbox",
                         description: "Sends a direct message to a linkedin profile URL using a connected sender account. inbox."
                     },
                     {
                         name: "Send Message To Lead",
-                        value: "sendMessageToLead",
+                        value: "inbox.sendMessageToLead",
                         action: "Send message to lead inbox",
                         description: "Sends a templated linkedin message directly to an existing lead by lead ID. inbox."
+                    }
+                ]
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "inbox"
+                        ],
+                        operation: [
+                            "inbox.listConversations"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Account ID",
+                        name: "accountId",
+                        type: "string",
+                        default: "",
+                        description: "ID of the linkedin sender whose conversations to return",
+                        placeholder: "e.g. sender_123"
+                    },
+                    {
+                        displayName: "Continuation Token",
+                        name: "continuationToken",
+                        type: "string",
+                        default: "",
+                        description: "Token for retrieving the next page of conversations",
+                        typeOptions: {
+                            password: true
+                        }
+                    },
+                    {
+                        displayName: "Limit",
+                        name: "limit",
+                        type: "number",
+                        default: 50,
+                        description: "Max number of results to return",
+                        typeOptions: {
+                            minValue: 1
+                        }
                     }
                 ]
             },
@@ -604,14 +793,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The conversation/chat ID to fetch messages from",
+                description: "ID of the conversation",
+                placeholder: "e.g. 2-OVp-y-UNyFXBYvx0FqmQ",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "getConversationMessages"
+                            "inbox.listMessages"
                         ]
                     }
                 }
@@ -622,14 +812,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The linkedin sender account ID that owns this conversation",
+                description: "ID of the linkedin sender that owns the conversation",
+                placeholder: "e.g. sender_123",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "getConversationMessages"
+                            "inbox.listMessages"
                         ]
                     }
                 }
@@ -646,7 +837,7 @@ export class Sendpilot implements INodeType {
                             "inbox"
                         ],
                         operation: [
-                            "getConversationMessages"
+                            "inbox.listMessages"
                         ]
                     }
                 },
@@ -656,53 +847,7 @@ export class Sendpilot implements INodeType {
                         name: "continuationToken",
                         type: "string",
                         default: "",
-                        description: "Token for fetching the next page of messages. returned in the previous response.",
-                        typeOptions: {
-                            password: true
-                        }
-                    },
-                    {
-                        displayName: "Limit",
-                        name: "limit",
-                        type: "number",
-                        default: 50,
-                        description: "Max number of results to return",
-                        typeOptions: {
-                            minValue: 1
-                        }
-                    }
-                ]
-            },
-            {
-                displayName: "Additional Fields",
-                name: "additionalFields",
-                type: "collection",
-                placeholder: "Add Field",
-                default: {},
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "inbox"
-                        ],
-                        operation: [
-                            "listConversations"
-                        ]
-                    }
-                },
-                options: [
-                    {
-                        displayName: "Account ID",
-                        name: "accountId",
-                        type: "string",
-                        default: "",
-                        description: "Filter by specific linkedin sender account ID. if not provided, returns conversations from all accounts."
-                    },
-                    {
-                        displayName: "Continuation Token",
-                        name: "continuationToken",
-                        type: "string",
-                        default: "",
-                        description: "Token for fetching the next page of conversations. returned in the previous response.",
+                        description: "Token for retrieving the next page of messages",
                         typeOptions: {
                             password: true
                         }
@@ -725,14 +870,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The linkedin profile URL of the person to connect with",
+                description: "Linkedin profile URL of the person to connect with",
+                placeholder: "e.g. https://www.linkedin.com/in/johndoe/",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendConnectionRequest"
+                            "inbox.sendConnectionRequest"
                         ]
                     }
                 }
@@ -743,14 +889,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The linkedin sender account ID to use",
+                description: "ID of the connected linkedin sender account to use",
+                placeholder: "e.g. sender_123",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendConnectionRequest"
+                            "inbox.sendConnectionRequest"
                         ]
                     }
                 }
@@ -767,7 +914,7 @@ export class Sendpilot implements INodeType {
                             "inbox"
                         ],
                         operation: [
-                            "sendConnectionRequest"
+                            "inbox.sendConnectionRequest"
                         ]
                     }
                 },
@@ -777,7 +924,8 @@ export class Sendpilot implements INodeType {
                         name: "message",
                         type: "string",
                         default: "",
-                        description: "Optional connection note. only works for premium linkedin accounts."
+                        description: "Optional connection note, available only for premium linkedin accounts",
+                        placeholder: "e.g. Hi John, I would love to connect with you!"
                     }
                 ]
             },
@@ -787,14 +935,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Message content (max 8000 characters)",
+                description: "Text of the linkedin message to send",
+                placeholder: "e.g. Hi John, I wanted to follow up on our conversation...",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessage"
+                            "inbox.sendMessage"
                         ]
                     }
                 }
@@ -805,14 +954,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Linkedin profile URL of the recipient",
+                description: "Linkedin profile URL of the recipient. the recipient must be a first-degree connection of the sender.",
+                placeholder: "e.g. https://www.linkedin.com/in/johndoe/",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessage"
+                            "inbox.sendMessage"
                         ]
                     }
                 }
@@ -823,14 +973,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Linkedin sender account ID to use",
+                description: "ID of the connected linkedin sender account to use",
+                placeholder: "e.g. sender_123",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessage"
+                            "inbox.sendMessage"
                         ]
                     }
                 }
@@ -847,7 +998,7 @@ export class Sendpilot implements INodeType {
                             "inbox"
                         ],
                         operation: [
-                            "sendMessage"
+                            "inbox.sendMessage"
                         ]
                     }
                 },
@@ -857,14 +1008,16 @@ export class Sendpilot implements INodeType {
                         name: "campaignId",
                         type: "string",
                         default: "",
-                        description: "Optional campaign ID for tracking"
+                        description: "Optional campaign ID to associate this message with",
+                        placeholder: "e.g. campaign_123"
                     },
                     {
                         displayName: "Lead ID",
                         name: "leadId",
                         type: "string",
                         default: "",
-                        description: "Optional lead ID for tracking"
+                        description: "Optional lead ID to associate this message with",
+                        placeholder: "e.g. lead_123"
                     }
                 ]
             },
@@ -874,14 +1027,14 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The lead ID to send the message to",
+                description: "ID of the lead to message",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessageToLead"
+                            "inbox.sendMessageToLead"
                         ]
                     }
                 }
@@ -892,14 +1045,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The message content to send. supports template variables: `{{firstname}}` (lead's first name), `{{lastname}}` (lead's last name).",
+                description: "Message content to send",
+                placeholder: "e.g. Hi {{firstName}}, I wanted to follow up on our conversation...",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessageToLead"
+                            "inbox.sendMessageToLead"
                         ]
                     }
                 }
@@ -910,17 +1064,44 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The linkedin sender account ID to use",
+                description: "Linkedin sender ID to use",
+                placeholder: "e.g. sender_123",
                 displayOptions: {
                     show: {
                         resource: [
                             "inbox"
                         ],
                         operation: [
-                            "sendMessageToLead"
+                            "inbox.sendMessageToLead"
                         ]
                     }
                 }
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "inbox"
+                        ],
+                        operation: [
+                            "inbox.sendMessageToLead"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Campaign ID",
+                        name: "campaignId",
+                        type: "string",
+                        default: "",
+                        description: "Optional campaign ID to associate this message with"
+                    }
+                ]
             },
             {
                 displayName: "Operation",
@@ -934,126 +1115,42 @@ export class Sendpilot implements INodeType {
                         ]
                     }
                 },
-                default: "createLeadDatabaseSearch",
+                default: "leadDatabase.getSearchResults",
                 options: [
                     {
                         name: "Create Database Search",
-                        value: "createLeadDatabaseSearch",
+                        value: "leadDatabase.startSearch",
                         action: "Create database search lead database",
                         description: "Initiates an asynchronous b2b lead search matching professional, company, and technology filters. lead database."
                     },
                     {
                         name: "Get Database Search Results",
-                        value: "getLeadDatabaseSearchResults",
+                        value: "leadDatabase.getSearchResults",
                         action: "Get database search results lead database",
                         description: "Retrieves paginated lead records and contact details from a completed database search. lead database."
                     },
                     {
                         name: "Get Database Search Status",
-                        value: "getLeadDatabaseSearchStatus",
+                        value: "leadDatabase.getSearchStatus",
                         action: "Get database search status lead database",
                         description: "Checks the execution progress and completion status of a lead database search job"
                     }
                 ]
             },
             {
-                displayName: "Filters",
-                name: "filters",
-                type: "json",
-                default: {},
-                required: true,
-                description: "Comprehensive filters for lead database search. all filters are optional and can be combined.",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadDatabase"
-                        ],
-                        operation: [
-                            "createLeadDatabaseSearch"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Limit",
-                name: "limit",
-                type: "number",
-                default: 50,
-                required: true,
-                description: "Max number of results to return",
-                typeOptions: {
-                    minValue: 1
-                },
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadDatabase"
-                        ],
-                        operation: [
-                            "createLeadDatabaseSearch"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Name",
-                name: "name",
-                type: "string",
-                default: "",
-                required: true,
-                description: "A name for this search (for your reference)",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadDatabase"
-                        ],
-                        operation: [
-                            "createLeadDatabaseSearch"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Additional Fields",
-                name: "additionalFields",
-                type: "collection",
-                placeholder: "Add Field",
-                default: {},
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadDatabase"
-                        ],
-                        operation: [
-                            "createLeadDatabaseSearch"
-                        ]
-                    }
-                },
-                options: [
-                    {
-                        displayName: "Webhook URL",
-                        name: "webhook_url",
-                        type: "string",
-                        default: "",
-                        description: "Optional URL to receive webhook when search completes",
-                        hint: "Expected format: uri"
-                    }
-                ]
-            },
-            {
                 displayName: "ID",
                 name: "id",
                 type: "string",
                 default: "",
                 required: true,
-                description: "Search ID",
+                description: "ID of the lead database search",
                 displayOptions: {
                     show: {
                         resource: [
                             "leadDatabase"
                         ],
                         operation: [
-                            "getLeadDatabaseSearchResults"
+                            "leadDatabase.getSearchResults"
                         ]
                     }
                 }
@@ -1070,226 +1167,7 @@ export class Sendpilot implements INodeType {
                             "leadDatabase"
                         ],
                         operation: [
-                            "getLeadDatabaseSearchResults"
-                        ]
-                    }
-                },
-                options: [
-                    {
-                        displayName: "Limit",
-                        name: "limit",
-                        type: "number",
-                        default: 50,
-                        description: "Max number of results to return",
-                        typeOptions: {
-                            minValue: 1
-                        }
-                    },
-                    {
-                        displayName: "Page",
-                        name: "page",
-                        type: "number",
-                        default: 1,
-                        description: "Page number",
-                        typeOptions: {
-                            minValue: 1
-                        }
-                    }
-                ]
-            },
-            {
-                displayName: "ID",
-                name: "id",
-                type: "string",
-                default: "",
-                required: true,
-                description: "Search ID",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadDatabase"
-                        ],
-                        operation: [
-                            "getLeadDatabaseSearchStatus"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Operation",
-                name: "operation",
-                type: "options",
-                noDataExpression: true,
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ]
-                    }
-                },
-                default: "createLeadExtractorCampaign",
-                options: [
-                    {
-                        name: "Create Lead Extractor Campaign",
-                        value: "createLeadExtractorCampaign",
-                        action: "Create lead extractor campaign",
-                        description: "Launches a scraping job to extract and enrich leads from linkedin or sales navigator search URLs. lead extractor."
-                    },
-                    {
-                        name: "Get Extractor Campaign Results",
-                        value: "getLeadExtractorCampaignResults",
-                        action: "Get extractor campaign results lead extractor",
-                        description: "Retrieves paginated lead profiles, job history, and contact information from a finished extraction job. lead extractor."
-                    },
-                    {
-                        name: "Get Extractor Campaign Status",
-                        value: "getLeadExtractorCampaignStatus",
-                        action: "Get extractor campaign status lead extractor",
-                        description: "Retrieves the progress percentage and extraction status of a lead scraping campaign. lead extractor."
-                    }
-                ]
-            },
-            {
-                displayName: "Limit",
-                name: "limit",
-                type: "number",
-                default: 50,
-                required: true,
-                description: "Max number of results to return",
-                typeOptions: {
-                    minValue: 1
-                },
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "createLeadExtractorCampaign"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Name",
-                name: "name",
-                type: "string",
-                default: "",
-                required: true,
-                description: "A name for this extraction campaign",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "createLeadExtractorCampaign"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "URLs",
-                name: "urls",
-                type: "json",
-                default: [],
-                required: true,
-                description: "Linkedin search URLs to extract leads from",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "createLeadExtractorCampaign"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Additional Fields",
-                name: "additionalFields",
-                type: "collection",
-                placeholder: "Add Field",
-                default: {},
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "createLeadExtractorCampaign"
-                        ]
-                    }
-                },
-                options: [
-                    {
-                        displayName: "Mode",
-                        name: "mode",
-                        type: "options",
-                        default: "extraction_only",
-                        description: "Extraction mode",
-                        options: [
-                            {
-                                name: "Extraction Only",
-                                value: "extraction_only"
-                            },
-                            {
-                                name: "With Enrichment",
-                                value: "with_enrichment"
-                            }
-                        ]
-                    },
-                    {
-                        displayName: "URL Type",
-                        name: "url_type",
-                        type: "options",
-                        default: "linkedin_search",
-                        description: "Type of URLs provided",
-                        options: [
-                            {
-                                name: "Linkedin Search",
-                                value: "linkedin_search"
-                            },
-                            {
-                                name: "Sales Navigator",
-                                value: "sales_navigator"
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                displayName: "ID",
-                name: "id",
-                type: "string",
-                default: "",
-                required: true,
-                description: "The campaign ID returned from the create campaign endpoint",
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "getLeadExtractorCampaignResults"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Additional Fields",
-                name: "additionalFields",
-                type: "collection",
-                placeholder: "Add Field",
-                default: {},
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leadExtractor"
-                        ],
-                        operation: [
-                            "getLeadExtractorCampaignResults"
+                            "leadDatabase.getSearchResults"
                         ]
                     }
                 },
@@ -1309,9 +1187,10 @@ export class Sendpilot implements INodeType {
                         name: "offset",
                         type: "number",
                         default: 0,
-                        description: "Number of leads to skip (for pagination)",
+                        description: "Number of leads to skip (starts at 0)",
                         typeOptions: {
-                            minValue: 0
+                            minValue: 0,
+                            maxValue: 10000
                         }
                     }
                 ]
@@ -1322,17 +1201,1121 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "The campaign ID returned from the create campaign endpoint",
+                description: "ID of the lead database search",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.getSearchStatus"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Filters",
+                name: "filters",
+                type: "collection",
+                default: {},
+                placeholder: "Add Field",
+                options: [
+                    {
+                        displayName: "Acquired End Date",
+                        name: "acquired_end_date",
+                        type: "string",
+                        default: "",
+                        description: "Acquisition date range end, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Acquired Start Date",
+                        name: "acquired_start_date",
+                        type: "string",
+                        default: "",
+                        description: "Acquisition date range start, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Bulk Domains",
+                        name: "bulk_domains",
+                        type: "string",
+                        default: "",
+                        description: "Company domains separated by commas or newlines"
+                    },
+                    {
+                        displayName: "Companies",
+                        name: "companies",
+                        type: "json",
+                        default: [],
+                        description: "Company names"
+                    },
+                    {
+                        displayName: "Company Linkedin Username",
+                        name: "company_linkedin_username",
+                        type: "json",
+                        default: [],
+                        description: "Company linkedin usernames or URLs"
+                    },
+                    {
+                        displayName: "Company Sizes",
+                        name: "company_sizes",
+                        type: "json",
+                        default: [],
+                        description: "Employee-size ranges"
+                    },
+                    {
+                        displayName: "Company Type",
+                        name: "company_type",
+                        type: "json",
+                        default: [],
+                        description: "Company types"
+                    },
+                    {
+                        displayName: "Demo Available",
+                        name: "demo_available",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company offers a demo"
+                    },
+                    {
+                        displayName: "Documentation Exist",
+                        name: "documentation_exist",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company provides documentation"
+                    },
+                    {
+                        displayName: "Excluded Bulk Domains",
+                        name: "excluded_bulk_domains",
+                        type: "string",
+                        default: "",
+                        description: "Company domains to exclude, separated by commas or newlines"
+                    },
+                    {
+                        displayName: "Excluded Companies",
+                        name: "excluded_companies",
+                        type: "json",
+                        default: [],
+                        description: "Company names to exclude"
+                    },
+                    {
+                        displayName: "Excluded Company Linkedin Username",
+                        name: "excluded_company_linkedin_username",
+                        type: "json",
+                        default: [],
+                        description: "Company linkedin usernames or URLs to exclude"
+                    },
+                    {
+                        displayName: "Excluded Company Sizes",
+                        name: "excluded_company_sizes",
+                        type: "json",
+                        default: [],
+                        description: "Employee-size codes to exclude, from 1 (one employee) to 9 (10001+)"
+                    },
+                    {
+                        displayName: "Excluded Company Type",
+                        name: "excluded_company_type",
+                        type: "json",
+                        default: [],
+                        description: "Company types to exclude"
+                    },
+                    {
+                        displayName: "Excluded Experimental Department",
+                        name: "excluded_experimental_department",
+                        type: "json",
+                        default: [],
+                        description: "Compatibility alias for excluded_member_department; do not supply both with different values"
+                    },
+                    {
+                        displayName: "Excluded Experimental Industries",
+                        name: "excluded_experimental_industries",
+                        type: "json",
+                        default: [],
+                        description: "Compatibility alias for excluded_industries; do not supply both with different values"
+                    },
+                    {
+                        displayName: "Excluded Hq Location",
+                        name: "excluded_hq_location",
+                        type: "json",
+                        default: [],
+                        description: "Headquarters locations to exclude"
+                    },
+                    {
+                        displayName: "Excluded Industries",
+                        name: "excluded_industries",
+                        type: "json",
+                        default: [],
+                        description: "Industries to exclude"
+                    },
+                    {
+                        displayName: "Excluded Job Posting Functions",
+                        name: "excluded_job_posting_functions",
+                        type: "json",
+                        default: [],
+                        description: "Job functions to exclude"
+                    },
+                    {
+                        displayName: "Excluded Job Posting Location",
+                        name: "excluded_job_posting_location",
+                        type: "json",
+                        default: [],
+                        description: "Job posting locations to exclude"
+                    },
+                    {
+                        displayName: "Excluded Job Posting Title",
+                        name: "excluded_job_posting_title",
+                        type: "json",
+                        default: [],
+                        description: "Recruiting titles to exclude"
+                    },
+                    {
+                        displayName: "Excluded Job Titles",
+                        name: "excluded_job_titles",
+                        type: "json",
+                        default: [],
+                        description: "Job titles to exclude"
+                    },
+                    {
+                        displayName: "Excluded Keywords",
+                        name: "excluded_keywords",
+                        type: "json",
+                        default: [],
+                        description: "Company keywords to exclude"
+                    },
+                    {
+                        displayName: "Excluded Locations",
+                        name: "excluded_locations",
+                        type: "json",
+                        default: [],
+                        description: "Person locations to exclude"
+                    },
+                    {
+                        displayName: "Excluded Member Certifications",
+                        name: "excluded_member_certifications",
+                        type: "json",
+                        default: [],
+                        description: "Certifications to exclude"
+                    },
+                    {
+                        displayName: "Excluded Member Department",
+                        name: "excluded_member_department",
+                        type: "json",
+                        default: [],
+                        description: "Departments to exclude"
+                    },
+                    {
+                        displayName: "Excluded Member Description",
+                        name: "excluded_member_description",
+                        type: "json",
+                        default: [],
+                        description: "Profile-summary keywords to exclude"
+                    },
+                    {
+                        displayName: "Excluded Member Linkedin Username",
+                        name: "excluded_member_linkedin_username",
+                        type: "json",
+                        default: [],
+                        description: "Linkedin usernames or profile URLs to exclude"
+                    },
+                    {
+                        displayName: "Excluded Member Skills",
+                        name: "excluded_member_skills",
+                        type: "json",
+                        default: [],
+                        description: "Profile skills to exclude"
+                    },
+                    {
+                        displayName: "Excluded Naics Codes",
+                        name: "excluded_naics_codes",
+                        type: "json",
+                        default: [],
+                        description: "Naics code strings to exclude"
+                    },
+                    {
+                        displayName: "Excluded Seniority Levels",
+                        name: "excluded_seniority_levels",
+                        type: "json",
+                        default: [],
+                        description: "Seniority levels to exclude"
+                    },
+                    {
+                        displayName: "Excluded Sic Codes",
+                        name: "excluded_sic_codes",
+                        type: "json",
+                        default: [],
+                        description: "Sic code strings to exclude"
+                    },
+                    {
+                        displayName: "Excluded Technologies Used",
+                        name: "excluded_technologies_used",
+                        type: "json",
+                        default: [],
+                        description: "Company technologies to exclude"
+                    },
+                    {
+                        displayName: "Excluded Top Topics",
+                        name: "excluded_top_topics",
+                        type: "json",
+                        default: [],
+                        description: "Website topics to exclude"
+                    },
+                    {
+                        displayName: "Experimental Industries",
+                        name: "experimental_industries",
+                        type: "json",
+                        default: [],
+                        description: "Compatibility alias for industries; do not supply both with different values"
+                    },
+                    {
+                        displayName: "Experimental Member Department",
+                        name: "experimental_member_department",
+                        type: "json",
+                        default: [],
+                        description: "Compatibility alias for member_department; do not supply both with different values"
+                    },
+                    {
+                        displayName: "Free Trial Available",
+                        name: "free_trial_available",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company offers a free trial"
+                    },
+                    {
+                        displayName: "Hq Location",
+                        name: "hq_location",
+                        type: "json",
+                        default: [],
+                        description: "Company headquarters locations"
+                    },
+                    {
+                        displayName: "Industries",
+                        name: "industries",
+                        type: "json",
+                        default: [],
+                        description: "Company industries. uses the supported experimental_industries provider field; query the catalog for values."
+                    },
+                    {
+                        displayName: "Ipo End Date",
+                        name: "ipo_end_date",
+                        type: "string",
+                        default: "",
+                        description: "Ipo date range end, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Ipo Start Date",
+                        name: "ipo_start_date",
+                        type: "string",
+                        default: "",
+                        description: "Ipo date range start, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Is Downloadable",
+                        name: "is_downloadable",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company offers downloadable software/resources"
+                    },
+                    {
+                        displayName: "Is Mapped Industries Strict",
+                        name: "is_mapped_industries_strict",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether true requires exact industry matching; false lets the provider match related industries"
+                    },
+                    {
+                        displayName: "Job Posting End Date",
+                        name: "job_posting_end_date",
+                        type: "string",
+                        default: "",
+                        description: "Job posting date range end, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Job Posting Location",
+                        name: "job_posting_location",
+                        type: "json",
+                        default: [],
+                        description: "Job posting locations"
+                    },
+                    {
+                        displayName: "Job Posting Seniority",
+                        name: "job_posting_seniority",
+                        type: "json",
+                        default: [],
+                        description: "Recruiting seniority levels"
+                    },
+                    {
+                        displayName: "Job Posting Start Date",
+                        name: "job_posting_start_date",
+                        type: "string",
+                        default: "",
+                        description: "Job posting date range start, dd/mm/yyyy"
+                    },
+                    {
+                        displayName: "Job Posting Title",
+                        name: "job_posting_title",
+                        type: "json",
+                        default: [],
+                        description: "Job titles the company is recruiting"
+                    },
+                    {
+                        displayName: "Job Posting Type",
+                        name: "job_posting_type",
+                        type: "json",
+                        default: [],
+                        description: "Employment types"
+                    },
+                    {
+                        displayName: "Job Title Match Mode",
+                        name: "job_title_match_mode",
+                        type: "options",
+                        default: "exact",
+                        description: "Job-title matching: exact, contains (provider default), or smart",
+                        options: [
+                            {
+                                name: "Contains",
+                                value: "contains"
+                            },
+                            {
+                                name: "Exact",
+                                value: "exact"
+                            },
+                            {
+                                name: "Smart",
+                                value: "smart"
+                            }
+                        ]
+                    },
+                    {
+                        displayName: "Job Title Smart Mode",
+                        name: "job_title_smart_mode",
+                        type: "options",
+                        default: "loose",
+                        description: "Sensitivity when job_title_match_mode is smart",
+                        options: [
+                            {
+                                name: "Loose",
+                                value: "loose"
+                            },
+                            {
+                                name: "Normal",
+                                value: "normal"
+                            },
+                            {
+                                name: "Strict",
+                                value: "strict"
+                            }
+                        ]
+                    },
+                    {
+                        displayName: "Job Titles",
+                        name: "job_titles",
+                        type: "json",
+                        default: [],
+                        description: "Current job titles. use the filter catalog for suggested values."
+                    },
+                    {
+                        displayName: "Keywords",
+                        name: "keywords",
+                        type: "json",
+                        default: [],
+                        description: "Keywords in company descriptions or specialties"
+                    },
+                    {
+                        displayName: "Last Funding Round Name",
+                        name: "last_funding_round_name",
+                        type: "json",
+                        default: [],
+                        description: "Latest funding-round types"
+                    },
+                    {
+                        displayName: "Locations",
+                        name: "locations",
+                        type: "json",
+                        default: [],
+                        description: "Person country, region or city"
+                    },
+                    {
+                        displayName: "Max Average Visit Duration Seconds",
+                        name: "max_average_visit_duration_seconds",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum visit duration in seconds",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Bounce Rate",
+                        name: "max_bounce_rate",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum bounce-rate percentage",
+                        typeOptions: {
+                            minValue: 0,
+                            maxValue: 100
+                        }
+                    },
+                    {
+                        displayName: "Max Company Employee Reviews Aggregate Score",
+                        name: "max_company_employee_reviews_aggregate_score",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum employee-review score",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Job Duration Months",
+                        name: "max_job_duration_months",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum time in the current job, in months",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Last Funding Round Amount Raised",
+                        name: "max_last_funding_round_amount_raised",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum latest funding amount",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Pages Per Visit",
+                        name: "max_pages_per_visit",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum average pages per visit",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Rank Category",
+                        name: "max_rank_category",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum website rank within its category",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Rank Country",
+                        name: "max_rank_country",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum website rank within its country",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Rank Global",
+                        name: "max_rank_global",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum global website rank",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Revenue Annual",
+                        name: "max_revenue_annual",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum annual revenue",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Total Experience Duration Months",
+                        name: "max_total_experience_duration_months",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum total experience in months",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Max Total Website Visits Monthly",
+                        name: "max_total_website_visits_monthly",
+                        type: "number",
+                        default: 0,
+                        description: "Maximum monthly website visits",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Member Certifications",
+                        name: "member_certifications",
+                        type: "json",
+                        default: [],
+                        description: "Professional certifications"
+                    },
+                    {
+                        displayName: "Member Department",
+                        name: "member_department",
+                        type: "json",
+                        default: [],
+                        description: "Departments; mapped to the supported provider department filter"
+                    },
+                    {
+                        displayName: "Member Description",
+                        name: "member_description",
+                        type: "json",
+                        default: [],
+                        description: "Keywords in profile summaries"
+                    },
+                    {
+                        displayName: "Member Full Name",
+                        name: "member_full_name",
+                        type: "string",
+                        default: "",
+                        description: "Person name search"
+                    },
+                    {
+                        displayName: "Member Linkedin Username",
+                        name: "member_linkedin_username",
+                        type: "json",
+                        default: [],
+                        description: "Linkedin usernames or profile URLs"
+                    },
+                    {
+                        displayName: "Member Skills",
+                        name: "member_skills",
+                        type: "json",
+                        default: [],
+                        description: "Profile skills"
+                    },
+                    {
+                        displayName: "Min Average Visit Duration Seconds",
+                        name: "min_average_visit_duration_seconds",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum visit duration in seconds",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Bounce Rate",
+                        name: "min_bounce_rate",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum bounce-rate percentage",
+                        typeOptions: {
+                            minValue: 0,
+                            maxValue: 100
+                        }
+                    },
+                    {
+                        displayName: "Min Company Employee Reviews Aggregate Score",
+                        name: "min_company_employee_reviews_aggregate_score",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum employee-review score",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Job Duration Months",
+                        name: "min_job_duration_months",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum time in the current job, in months",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Last Funding Round Amount Raised",
+                        name: "min_last_funding_round_amount_raised",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum latest funding amount",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Pages Per Visit",
+                        name: "min_pages_per_visit",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum average pages per visit",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Rank Category",
+                        name: "min_rank_category",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum website rank within its category",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Rank Country",
+                        name: "min_rank_country",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum website rank within its country",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Rank Global",
+                        name: "min_rank_global",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum global website rank",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Revenue Annual",
+                        name: "min_revenue_annual",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum annual revenue",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Total Experience Duration Months",
+                        name: "min_total_experience_duration_months",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum total experience in months",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Min Total Website Visits Monthly",
+                        name: "min_total_website_visits_monthly",
+                        type: "number",
+                        default: 0,
+                        description: "Minimum monthly website visits",
+                        typeOptions: {
+                            minValue: 0
+                        }
+                    },
+                    {
+                        displayName: "Mobile Apps Exist",
+                        name: "mobile_apps_exist",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company has mobile apps"
+                    },
+                    {
+                        displayName: "Naics Codes",
+                        name: "naics_codes",
+                        type: "json",
+                        default: [],
+                        description: "Naics code objects from the catalog. only each value is sent to the provider."
+                    },
+                    {
+                        displayName: "Online Reviews Exist",
+                        name: "online_reviews_exist",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company has online reviews"
+                    },
+                    {
+                        displayName: "Ownership Status",
+                        name: "ownership_status",
+                        type: "json",
+                        default: [],
+                        description: "Company ownership status"
+                    },
+                    {
+                        displayName: "Pricing Available",
+                        name: "pricing_available",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether company publishes pricing"
+                    },
+                    {
+                        displayName: "Seniority Levels",
+                        name: "seniority_levels",
+                        type: "json",
+                        default: [],
+                        description: "Seniority level; use exact catalog values, e.g. c-level or president/vice president"
+                    },
+                    {
+                        displayName: "Sic Codes",
+                        name: "sic_codes",
+                        type: "json",
+                        default: [],
+                        description: "Sic code objects from the catalog. only each value is sent to the provider."
+                    },
+                    {
+                        displayName: "Technologies Used",
+                        name: "technologies_used",
+                        type: "json",
+                        default: [],
+                        description: "Technologies used by the company"
+                    },
+                    {
+                        displayName: "Top Topics",
+                        name: "top_topics",
+                        type: "json",
+                        default: [],
+                        description: "Topics covered by the company website"
+                    }
+                ],
+                required: true,
+                description: "Lead database filters to apply. use get /v1/lead-database/filters to see supported filters and values.",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.startSearch"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Limit",
+                name: "limit",
+                type: "number",
+                default: 50,
+                required: true,
+                description: "Max number of results to return",
+                typeOptions: {
+                    minValue: 1
+                },
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.startSearch"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Name",
+                name: "name",
+                type: "string",
+                default: "",
+                required: true,
+                description: "Name to assign to the search",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.startSearch"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadDatabase"
+                        ],
+                        operation: [
+                            "leadDatabase.startSearch"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Webhook URL",
+                        name: "webhook_url",
+                        type: "string",
+                        default: "",
+                        description: "Public HTTPS URL that receives a notification when the search completes",
+                        placeholder: "e.g. https://my-app.example.com/webhooks/sendpilot"
+                    }
+                ]
+            },
+            {
+                displayName: "Operation",
+                name: "operation",
+                type: "options",
+                noDataExpression: true,
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ]
+                    }
+                },
+                default: "leadExtractor.getResults",
+                options: [
+                    {
+                        name: "Create Lead Extractor Campaign",
+                        value: "leadExtractor.startExtraction",
+                        action: "Create lead extractor campaign",
+                        description: "Launches a scraping job to extract and enrich leads from linkedin or sales navigator search URLs. lead extractor."
+                    },
+                    {
+                        name: "Get Extractor Campaign Results",
+                        value: "leadExtractor.getResults",
+                        action: "Get extractor campaign results lead extractor",
+                        description: "Retrieves paginated lead profiles, job history, and contact information from a finished extraction job. lead extractor."
+                    },
+                    {
+                        name: "Get Extractor Campaign Status",
+                        value: "leadExtractor.getStatus",
+                        action: "Get extractor campaign status lead extractor",
+                        description: "Retrieves the progress percentage and extraction status of a lead scraping campaign. lead extractor."
+                    }
+                ]
+            },
+            {
+                displayName: "ID",
+                name: "id",
+                type: "string",
+                default: "",
+                required: true,
+                description: "ID of the lead extraction campaign",
                 displayOptions: {
                     show: {
                         resource: [
                             "leadExtractor"
                         ],
                         operation: [
-                            "getLeadExtractorCampaignStatus"
+                            "leadExtractor.getResults"
                         ]
                     }
                 }
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.getResults"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Enriched Only",
+                        name: "enriched_only",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether when true, return only leads with completed enrichment. when omitted or false, return all leads. accepts true, false, 1, or 0."
+                    },
+                    {
+                        displayName: "Limit",
+                        name: "limit",
+                        type: "number",
+                        default: 50,
+                        description: "Max number of results to return",
+                        typeOptions: {
+                            minValue: 1
+                        }
+                    },
+                    {
+                        displayName: "Offset",
+                        name: "offset",
+                        type: "number",
+                        default: 0,
+                        description: "Number of leads to skip (starts at 0)",
+                        typeOptions: {
+                            minValue: 0,
+                            maxValue: 10000
+                        }
+                    }
+                ]
+            },
+            {
+                displayName: "ID",
+                name: "id",
+                type: "string",
+                default: "",
+                required: true,
+                description: "ID of the lead extraction campaign",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.getStatus"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Limit",
+                name: "limit",
+                type: "number",
+                default: 50,
+                required: true,
+                description: "Max number of results to return",
+                typeOptions: {
+                    minValue: 1
+                },
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Mode",
+                name: "mode",
+                type: "options",
+                default: "extraction_only",
+                required: true,
+                description: "Choose lead extraction only or extraction with enrichment",
+                options: [
+                    {
+                        name: "Extraction Only",
+                        value: "extraction_only"
+                    },
+                    {
+                        name: "With Enrichment",
+                        value: "with_enrichment"
+                    }
+                ],
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Name",
+                name: "name",
+                type: "string",
+                default: "",
+                required: true,
+                description: "Name of the extraction campaign",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "URL Type",
+                name: "url_type",
+                type: "options",
+                default: "linkedin_search",
+                required: true,
+                description: "Type of the supplied search URLs",
+                options: [
+                    {
+                        name: "Linkedin Search",
+                        value: "linkedin_search"
+                    },
+                    {
+                        name: "Sales Navigator",
+                        value: "sales_navigator"
+                    }
+                ],
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "URLs",
+                name: "urls",
+                type: "json",
+                default: [],
+                required: true,
+                description: "HTTPS search URLs from linkedin or sales navigator",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leadExtractor"
+                        ],
+                        operation: [
+                            "leadExtractor.startExtraction"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Webhook URL",
+                        name: "webhook_url",
+                        type: "string",
+                        default: "",
+                        description: "Public HTTPS URL that receives a notification when the extraction campaign completes",
+                        placeholder: "e.g. https://my-app.example.com/webhooks/sendpilot"
+                    }
+                ]
             },
             {
                 displayName: "Operation",
@@ -1346,29 +2329,29 @@ export class Sendpilot implements INodeType {
                         ]
                     }
                 },
-                default: "addLeadsToCampaign",
+                default: "leads.add",
                 options: [
                     {
                         name: "Add Leads To Campaign",
-                        value: "addLeadsToCampaign",
+                        value: "leads.add",
                         action: "Add leads to campaign",
                         description: "Adds one or more leads with profile attributes and custom fields to an outreach campaign"
                     },
                     {
                         name: "Get",
-                        value: "getLeadById",
+                        value: "leads.get",
                         action: "Get lead",
                         description: "Retrieves profile information, company data, and outreach history for a specific lead"
                     },
                     {
                         name: "Get Many",
-                        value: "listLeads",
+                        value: "leads.list",
                         action: "Get many leads",
                         description: "Retrieves a paginated list of leads filtered by campaign ID and outreach progress status"
                     },
                     {
                         name: "Update Lead Status",
-                        value: "updateLeadStatus",
+                        value: "leads.updateStatus",
                         action: "Update lead status",
                         description: "Updates the progression status and notes for a specific lead"
                     }
@@ -1380,14 +2363,15 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Campaign ID to add leads to",
+                description: "ID of the campaign to add leads to",
+                placeholder: "e.g. cmobr5lei0000u1h02ezf5itt",
                 displayOptions: {
                     show: {
                         resource: [
                             "leads"
                         ],
                         operation: [
-                            "addLeadsToCampaign"
+                            "leads.add"
                         ]
                     }
                 }
@@ -1398,13 +2382,15 @@ export class Sendpilot implements INodeType {
                 type: "json",
                 default: [],
                 required: true,
+                description: "Array of 1\u20131,000 leads. each lead must include linkedinurl; other fields are dynamic.",
+                placeholder: "e.g. [object Object]",
                 displayOptions: {
                     show: {
                         resource: [
                             "leads"
                         ],
                         operation: [
-                            "addLeadsToCampaign"
+                            "leads.add"
                         ]
                     }
                 }
@@ -1415,14 +2401,14 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Lead ID",
+                description: "ID of the lead to retrieve",
                 displayOptions: {
                     show: {
                         resource: [
                             "leads"
                         ],
                         operation: [
-                            "getLeadById"
+                            "leads.get"
                         ]
                     }
                 }
@@ -1439,17 +2425,221 @@ export class Sendpilot implements INodeType {
                             "leads"
                         ],
                         operation: [
-                            "listLeads"
+                            "leads.get"
                         ]
                     }
                 },
                 options: [
                     {
-                        displayName: "Campaign ID",
-                        name: "campaignId",
-                        type: "string",
-                        default: "",
-                        description: "Filter by campaign ID"
+                        displayName: "Full",
+                        name: "full",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether set to true (or 1) to include all fields: contact data, profile details, and custom fields"
+                    }
+                ]
+            },
+            {
+                displayName: "Output",
+                name: "outputMode",
+                type: "options",
+                default: "simplified",
+                description: "Choose whether to return useful fields, the raw response, or selected fields",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leads"
+                        ],
+                        operation: [
+                            "leads.get"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        name: "Raw",
+                        value: "raw",
+                        description: "Return the complete API response"
+                    },
+                    {
+                        name: "Selected Fields",
+                        value: "selected",
+                        description: "Return only selected fields"
+                    },
+                    {
+                        name: "Simplified",
+                        value: "simplified",
+                        description: "Return up to 10 useful fields"
+                    }
+                ]
+            },
+            {
+                displayName: "Fields to Include",
+                name: "selectedFields",
+                type: "multiOptions",
+                default: [
+                    "id",
+                    "title",
+                    "status",
+                    "email",
+                    "createdAt",
+                    "updatedAt",
+                    "about",
+                    "campaignId",
+                    "company",
+                    "connectionCount"
+                ],
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leads"
+                        ],
+                        operation: [
+                            "leads.get"
+                        ],
+                        outputMode: [
+                            "selected"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        name: "About",
+                        value: "about"
+                    },
+                    {
+                        name: "CampaignId",
+                        value: "campaignId"
+                    },
+                    {
+                        name: "Company",
+                        value: "company"
+                    },
+                    {
+                        name: "ConnectionCount",
+                        value: "connectionCount"
+                    },
+                    {
+                        name: "CreatedAt",
+                        value: "createdAt"
+                    },
+                    {
+                        name: "CustomLeadStatus",
+                        value: "customLeadStatus"
+                    },
+                    {
+                        name: "Data",
+                        value: "data"
+                    },
+                    {
+                        name: "Email",
+                        value: "email"
+                    },
+                    {
+                        name: "FirstName",
+                        value: "firstName"
+                    },
+                    {
+                        name: "FollowerCount",
+                        value: "followerCount"
+                    },
+                    {
+                        name: "ID",
+                        value: "id"
+                    },
+                    {
+                        name: "Industry",
+                        value: "industry"
+                    },
+                    {
+                        name: "IsOpenProfile",
+                        value: "isOpenProfile"
+                    },
+                    {
+                        name: "IsPremium",
+                        value: "isPremium"
+                    },
+                    {
+                        name: "LastName",
+                        value: "lastName"
+                    },
+                    {
+                        name: "LinkedinUrl",
+                        value: "linkedinUrl"
+                    },
+                    {
+                        name: "Location",
+                        value: "location"
+                    },
+                    {
+                        name: "ProfilePictureUrl",
+                        value: "profilePictureUrl"
+                    },
+                    {
+                        name: "SenderId",
+                        value: "senderId"
+                    },
+                    {
+                        name: "Status",
+                        value: "status"
+                    },
+                    {
+                        name: "Title",
+                        value: "title"
+                    },
+                    {
+                        name: "UpdatedAt",
+                        value: "updatedAt"
+                    },
+                    {
+                        name: "Website",
+                        value: "website"
+                    }
+                ]
+            },
+            {
+                displayName: "Campaign ID",
+                name: "campaignId",
+                type: "string",
+                default: "",
+                required: true,
+                description: "ID of the campaign whose leads to return",
+                placeholder: "e.g. cmobr5lei0000u1h02ezf5itt",
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leads"
+                        ],
+                        operation: [
+                            "leads.list"
+                        ]
+                    }
+                }
+            },
+            {
+                displayName: "Additional Fields",
+                name: "additionalFields",
+                type: "collection",
+                placeholder: "Add Field",
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: [
+                            "leads"
+                        ],
+                        operation: [
+                            "leads.list"
+                        ]
+                    }
+                },
+                options: [
+                    {
+                        displayName: "Full",
+                        name: "full",
+                        type: "boolean",
+                        default: false,
+                        description: "Whether when true, include all lead fields, including dynamic data. defaults to false.",
+                        placeholder: "e.g. true"
                     },
                     {
                         displayName: "Limit",
@@ -1466,9 +2656,10 @@ export class Sendpilot implements INodeType {
                         name: "page",
                         type: "number",
                         default: 1,
-                        description: "Page number",
+                        description: "Page number to return (starts at 1)",
                         typeOptions: {
-                            minValue: 1
+                            minValue: 1,
+                            maxValue: 100
                         }
                     },
                     {
@@ -1476,31 +2667,147 @@ export class Sendpilot implements INodeType {
                         name: "status",
                         type: "options",
                         default: "PENDING",
-                        description: "Filter by lead status",
+                        description: "Filter leads by status",
                         options: [
+                            {
+                                name: "BLOCKED",
+                                value: "BLOCKED"
+                            },
+                            {
+                                name: "CONNECTED",
+                                value: "CONNECTED"
+                            },
                             {
                                 name: "CONNECTION ACCEPTED",
                                 value: "CONNECTION_ACCEPTED"
+                            },
+                            {
+                                name: "CONNECTION ALREADY SENT",
+                                value: "CONNECTION_ALREADY_SENT"
+                            },
+                            {
+                                name: "CONNECTION SCHEDULED",
+                                value: "CONNECTION_SCHEDULED"
                             },
                             {
                                 name: "CONNECTION SENT",
                                 value: "CONNECTION_SENT"
                             },
                             {
+                                name: "CONNECTION WITHDRAWN",
+                                value: "CONNECTION_WITHDRAWN"
+                            },
+                            {
                                 name: "DONE",
                                 value: "DONE"
+                            },
+                            {
+                                name: "FAILED",
+                                value: "FAILED"
+                            },
+                            {
+                                name: "FOLLOWUP SENT",
+                                value: "FOLLOWUP_SENT"
+                            },
+                            {
+                                name: "ICP MATCH",
+                                value: "ICP_MATCH"
+                            },
+                            {
+                                name: "ICP NOT MATCH",
+                                value: "ICP_NOT_MATCH"
+                            },
+                            {
+                                name: "IRRELEVANT",
+                                value: "IRRELEVANT"
+                            },
+                            {
+                                name: "LIKE POST SCHEDULED",
+                                value: "LIKE_POST_SCHEDULED"
+                            },
+                            {
+                                name: "LIKED POST",
+                                value: "LIKED_POST"
+                            },
+                            {
+                                name: "MEETING BOOKED",
+                                value: "MEETING_BOOKED"
+                            },
+                            {
+                                name: "MESSAGE SCHEDULED",
+                                value: "MESSAGE_SCHEDULED"
                             },
                             {
                                 name: "MESSAGE SENT",
                                 value: "MESSAGE_SENT"
                             },
                             {
+                                name: "NOT CONNECTED",
+                                value: "NOT_CONNECTED"
+                            },
+                            {
+                                name: "OPPORTUNITY",
+                                value: "OPPORTUNITY"
+                            },
+                            {
                                 name: "PENDING",
                                 value: "PENDING"
                             },
                             {
+                                name: "PROCESSING",
+                                value: "PROCESSING"
+                            },
+                            {
+                                name: "PROFILE UNREACHABLE",
+                                value: "PROFILE_UNREACHABLE"
+                            },
+                            {
+                                name: "PROFILE VIEWED",
+                                value: "PROFILE_VIEWED"
+                            },
+                            {
+                                name: "RATE LIMITED",
+                                value: "RATE_LIMITED"
+                            },
+                            {
                                 name: "REPLY RECEIVED",
                                 value: "REPLY_RECEIVED"
+                            },
+                            {
+                                name: "SKIPPED",
+                                value: "SKIPPED"
+                            },
+                            {
+                                name: "STARTED",
+                                value: "STARTED"
+                            },
+                            {
+                                name: "STOPPED",
+                                value: "STOPPED"
+                            },
+                            {
+                                name: "SUCCESS",
+                                value: "SUCCESS"
+                            },
+                            {
+                                name: "UNSUBSCRIBED",
+                                value: "UNSUBSCRIBED"
+                            },
+                            {
+                                name: "VIEW PROFILE SCHEDULED",
+                                value: "VIEW_PROFILE_SCHEDULED"
+                            },
+                            {
+                                name: "WAITING",
+                                value: "WAITING"
+                            },
+                            {
+                                name: "WITHDRAWAL NOT POSSIBLE",
+                                value: "WITHDRAWAL_NOT_POSSIBLE"
+                            },
+                            {
+                                name: "WITHDRAWAL SCHEDULED",
+                                value: "WITHDRAWAL_SCHEDULED"
                             }
                         ]
                     }
@@ -1512,58 +2819,14 @@ export class Sendpilot implements INodeType {
                 type: "string",
                 default: "",
                 required: true,
-                description: "Lead ID",
+                description: "ID of the lead to update",
                 displayOptions: {
                     show: {
                         resource: [
                             "leads"
                         ],
                         operation: [
-                            "updateLeadStatus"
-                        ]
-                    }
-                }
-            },
-            {
-                displayName: "Status",
-                name: "status",
-                type: "options",
-                default: "PENDING",
-                required: true,
-                description: "New status for the lead",
-                options: [
-                    {
-                        name: "CONNECTION ACCEPTED",
-                        value: "CONNECTION_ACCEPTED"
-                    },
-                    {
-                        name: "CONNECTION SENT",
-                        value: "CONNECTION_SENT"
-                    },
-                    {
-                        name: "DONE",
-                        value: "DONE"
-                    },
-                    {
-                        name: "MESSAGE SENT",
-                        value: "MESSAGE_SENT"
-                    },
-                    {
-                        name: "PENDING",
-                        value: "PENDING"
-                    },
-                    {
-                        name: "REPLY RECEIVED",
-                        value: "REPLY_RECEIVED"
-                    }
-                ],
-                displayOptions: {
-                    show: {
-                        resource: [
-                            "leads"
-                        ],
-                        operation: [
-                            "updateLeadStatus"
+                            "leads.updateStatus"
                         ]
                     }
                 }
@@ -1580,17 +2843,90 @@ export class Sendpilot implements INodeType {
                             "leads"
                         ],
                         operation: [
-                            "updateLeadStatus"
+                            "leads.updateStatus"
                         ]
                     }
                 },
                 options: [
                     {
+                        displayName: "Custom Lead Status",
+                        name: "customLeadStatus",
+                        type: "options",
+                        default: "LEAD",
+                        description: "New custom lead status for CRM categorization",
+                        placeholder: "e.g. INTERESTED",
+                        options: [
+                            {
+                                name: "CLOSED",
+                                value: "CLOSED"
+                            },
+                            {
+                                name: "INTERESTED",
+                                value: "INTERESTED"
+                            },
+                            {
+                                name: "LEAD",
+                                value: "LEAD"
+                            },
+                            {
+                                name: "MEETING BOOKED",
+                                value: "MEETING_BOOKED"
+                            },
+                            {
+                                name: "MEETING COMPLETE NOT CLOSED",
+                                value: "MEETING_COMPLETE_NOT_CLOSED"
+                            },
+                            {
+                                name: "NO RESPONSE",
+                                value: "NO_RESPONSE"
+                            },
+                            {
+                                name: "NOT INTERESTED",
+                                value: "NOT_INTERESTED"
+                            },
+                            {
+                                name: "WRONG PERSON",
+                                value: "WRONG_PERSON"
+                            }
+                        ]
+                    },
+                    {
                         displayName: "Note",
                         name: "note",
                         type: "string",
                         default: "",
-                        description: "Optional note for the status change"
+                        description: "Optional note explaining the status change",
+                        placeholder: "e.g. Customer showed interest in demo"
+                    },
+                    {
+                        displayName: "Status",
+                        name: "status",
+                        type: "options",
+                        default: "OPPORTUNITY",
+                        description: "Set an outcome status. sequence-managed statuses cannot be changed through this field.",
+                        placeholder: "e.g. MEETING_BOOKED",
+                        options: [
+                            {
+                                name: "DONE",
+                                value: "DONE"
+                            },
+                            {
+                                name: "IRRELEVANT",
+                                value: "IRRELEVANT"
+                            },
+                            {
+                                name: "MEETING BOOKED",
+                                value: "MEETING_BOOKED"
+                            },
+                            {
+                                name: "OPPORTUNITY",
+                                value: "OPPORTUNITY"
+                            },
+                            {
+                                name: "UNSUBSCRIBED",
+                                value: "UNSUBSCRIBED"
+                            }
+                        ]
                     }
                 ]
             }
@@ -1615,7 +2951,7 @@ export class Sendpilot implements INodeType {
         let pagination: PaginationContract = { style: 'none', advancement: '', maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10 * 1024 * 1024, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         let responsePlan: { binary: boolean; full: boolean; envelopePath: string; itemPath: string; fields: string[]; simplified: string[] } = { binary: false, full: false, envelopePath: "", itemPath: "", fields: [], simplified: [] };
         switch (operation) {
-          case "getCampaign": {
+          case "campaigns.get": {
         
         
         let path = "/v1/campaigns/{id}";
@@ -1625,16 +2961,16 @@ export class Sendpilot implements INodeType {
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["connectionsSent","createdAt","description","id","linkedInSenderIds","messagesSent","name","repliesReceived","status","totalLeads","type","updatedAt"], simplified: ["id","name","status","type","description","createdAt","updatedAt","connectionsSent","messagesSent","repliesReceived"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["connectionsSent","createdAt","id","leadsContacted","linkedInSenderIds","messagesSent","name","repliesReceived","status","totalLeads","type","updatedAt"], simplified: ["id","name","status","type","createdAt","updatedAt","connectionsSent","leadsContacted","messagesSent","repliesReceived"] };
+        errorPlan = {"404":{"title":"Campaign not found"}};
         break;
       }
-    case "listCampaigns": {
+    case "campaigns.list": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         const path = "/v1/campaigns";
@@ -1646,16 +2982,16 @@ export class Sendpilot implements INodeType {
     if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["campaigns","pagination"], simplified: ["campaigns","pagination"] };
-        errorPlan = {"401":{"title":"Unauthorized"}};
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"429":{"title":"Rate limit exceeded"}};
         break;
       }
-    case "updateCampaign": {
+    case "campaigns.update": {
         
         
         let path = "/v1/campaigns/{id}";
@@ -1663,18 +2999,18 @@ export class Sendpilot implements INodeType {
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
-        setBodyField(body as IDataObject, {"name":"action","displayName":"Action","type":"string","required":true,"description":"Action to perform on the campaign","enum":["pause","resume"]}, this.getNodeParameter("action", itemIndex), this, itemIndex);
+        setBodyField(body as IDataObject, {"name":"action","displayName":"Action","description":"Pause or resume the campaign.","type":"string","required":true,"enum":["pause","resume"],"example":"pause"}, this.getNodeParameter("action", itemIndex), this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "PATCH" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["action","campaignId","message","newStatus","success"], simplified: ["action","campaignId","message","newStatus","success"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        errorPlan = {"400":{"title":"Invalid action or campaign state"},"404":{"title":"Campaign not found"}};
         break;
       }
-    case "getCredits": {
+    case "credits.get": {
         
         
         const path = "/v1/credits";
@@ -1684,16 +3020,97 @@ export class Sendpilot implements INodeType {
         
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["available","nextResetDate","purchased","subscription","used"], simplified: ["available","nextResetDate","purchased","subscription","used"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"404":{"title":"Workspace not found"},"429":{"title":"Rate limit exceeded"},"500":{"title":"Internal server error"}};
         break;
       }
-    case "getConversationMessages": {
+    case "leadDatabase.filters": {
+        
+        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+        const path = "/v1/lead-database/filters";
+        const qs: IDataObject = {};
+        
+        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
+        if (additionalFields["filter"] !== undefined) qs["filter"] = additionalFields["filter"];
+    if (additionalFields["search"] !== undefined) qs["search"] = additionalFields["search"];
+    if (additionalFields["offset"] !== undefined) qs["offset"] = additionalFields["offset"];
+    if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
+        
+        
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
+        options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
+        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
+        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
+        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["filter","filters","has_more","limit","offset","total","values"], simplified: ["filter","filters","has_more","limit","offset","total","values"] };
+        errorPlan = {"400":{"title":"Unsupported filter or invalid pagination"},"401":{"title":"Invalid or missing API key"},"403":{"title":"Key lacks leads:read"}};
+        break;
+      }
+    case "senders.quotas": {
+        
+        
+        const path = "/v1/senders/quotas";
+        const qs: IDataObject = {};
+        
+        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
+        
+        
+        
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
+        options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
+        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
+        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
+        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["senders","total"], simplified: ["senders","total"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"403":{"title":"Key lacks senders:read"}};
+        break;
+      }
+    case "workspace.me": {
+        
+        
+        const path = "/v1/me";
+        const qs: IDataObject = {};
+        
+        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
+        
+        
+        
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
+        options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
+        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
+        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
+        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["apiKey","missingScopes","subscription","workspace"], simplified: ["apiKey","missingScopes","subscription","workspace"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"403":{"title":"Key lacks workspace:read"}};
+        break;
+      }
+    case "inbox.listConversations": {
+        
+        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+        const path = "/v1/inbox/conversations";
+        const qs: IDataObject = {};
+        
+        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
+        if (additionalFields["accountId"] !== undefined) qs["accountId"] = additionalFields["accountId"];
+    if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
+    if (additionalFields["continuationToken"] !== undefined) qs["continuationToken"] = additionalFields["continuationToken"];
+        
+        
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
+        options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
+        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
+        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
+        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["conversations","pagination"], simplified: ["conversations","pagination"] };
+        errorPlan = {"404":{"title":"Account not found"}};
+        break;
+      }
+    case "inbox.listMessages": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/inbox/conversations/{conversationId}/messages";
@@ -1706,37 +3123,16 @@ export class Sendpilot implements INodeType {
     if (additionalFields["continuationToken"] !== undefined) qs["continuationToken"] = additionalFields["continuationToken"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["conversationId","messages","pagination"], simplified: ["conversationId","messages","pagination"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        errorPlan = {"400":{"title":"Missing accountId parameter"},"404":{"title":"Conversation or account not found"}};
         break;
       }
-    case "listConversations": {
-        
-        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
-        const path = "/v1/inbox/conversations";
-        const qs: IDataObject = {};
-        
-        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
-        if (additionalFields["accountId"] !== undefined) qs["accountId"] = additionalFields["accountId"];
-    if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
-    if (additionalFields["continuationToken"] !== undefined) qs["continuationToken"] = additionalFields["continuationToken"];
-        
-        
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
-        options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
-        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
-        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
-        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["conversations","pagination"], simplified: ["conversations","pagination"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
-        break;
-      }
-    case "listSenders": {
+    case "inbox.listSenders": {
         
         
         const path = "/v1/inbox/senders";
@@ -1746,16 +3142,16 @@ export class Sendpilot implements INodeType {
         
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["senders","total"], simplified: ["senders","total"] };
-        errorPlan = {"401":{"title":"Unauthorized"}};
+        errorPlan = {};
         break;
       }
-    case "sendConnectionRequest": {
+    case "inbox.sendConnectionRequest": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         const path = "/v1/inbox/connect";
@@ -1763,20 +3159,20 @@ export class Sendpilot implements INodeType {
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         
-        if (additionalFields["message"] !== undefined) setBodyField(body as IDataObject, {"name":"message","displayName":"Message","type":"string","description":"Optional connection note. Only works for premium LinkedIn accounts."}, additionalFields["message"], this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"recipientLinkedinUrl","displayName":"Recipient Linkedin Url","type":"string","required":true,"description":"The LinkedIn profile URL of the person to connect with"}, this.getNodeParameter("recipientLinkedinUrl", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","type":"string","required":true,"description":"The LinkedIn sender account ID to use"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
+        if (additionalFields["message"] !== undefined) setBodyField(body as IDataObject, {"name":"message","displayName":"Message","description":"Optional connection note, available only for premium LinkedIn accounts.","type":"string","example":"Hi John, I would love to connect with you!"}, additionalFields["message"], this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"recipientLinkedinUrl","displayName":"Recipient Linkedin Url","description":"LinkedIn profile URL of the person to connect with.","type":"string","required":true,"example":"https://www.linkedin.com/in/johndoe/"}, this.getNodeParameter("recipientLinkedinUrl", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","description":"ID of the connected LinkedIn sender account to use.","type":"string","required":true,"example":"sender_123"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["recipientLinkedinUrl","requestId","status","success","timestamp"], simplified: ["recipientLinkedinUrl","requestId","status","success","timestamp"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["error","recipientLinkedinUrl","requestId","status","success","timestamp"], simplified: ["error","recipientLinkedinUrl","requestId","status","success","timestamp"] };
+        errorPlan = {"400":{"title":"Invalid request or sender not found"},"429":{"title":"Daily connection limit exceeded"}};
         break;
       }
-    case "sendMessage": {
+    case "inbox.sendMessage": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         const path = "/v1/inbox/send";
@@ -1784,64 +3180,43 @@ export class Sendpilot implements INodeType {
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         
-        if (additionalFields["campaignId"] !== undefined) setBodyField(body as IDataObject, {"name":"campaignId","displayName":"Campaign Id","type":"string","description":"Optional campaign ID for tracking"}, additionalFields["campaignId"], this, itemIndex);
-    if (additionalFields["leadId"] !== undefined) setBodyField(body as IDataObject, {"name":"leadId","displayName":"Lead Id","type":"string","description":"Optional lead ID for tracking"}, additionalFields["leadId"], this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"message","displayName":"Message","type":"string","required":true,"description":"Message content (max 8000 characters)"}, this.getNodeParameter("message", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"recipientLinkedinUrl","displayName":"Recipient Linkedin Url","type":"string","required":true,"description":"LinkedIn profile URL of the recipient"}, this.getNodeParameter("recipientLinkedinUrl", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","type":"string","required":true,"description":"LinkedIn sender account ID to use"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
+        if (additionalFields["campaignId"] !== undefined) setBodyField(body as IDataObject, {"name":"campaignId","displayName":"Campaign Id","description":"Optional campaign ID to associate this message with","type":"string","example":"campaign_123"}, additionalFields["campaignId"], this, itemIndex);
+    if (additionalFields["leadId"] !== undefined) setBodyField(body as IDataObject, {"name":"leadId","displayName":"Lead Id","description":"Optional lead ID to associate this message with","type":"string","example":"lead_123"}, additionalFields["leadId"], this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"message","displayName":"Message","description":"Text of the LinkedIn message to send.","type":"string","required":true,"example":"Hi John, I wanted to follow up on our conversation..."}, this.getNodeParameter("message", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"recipientLinkedinUrl","displayName":"Recipient Linkedin Url","description":"LinkedIn profile URL of the recipient. The recipient must be a first-degree connection of the sender.","type":"string","required":true,"example":"https://www.linkedin.com/in/johndoe/"}, this.getNodeParameter("recipientLinkedinUrl", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","description":"ID of the connected LinkedIn sender account to use.","type":"string","required":true,"example":"sender_123"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["leadId","messageId","recipientLinkedinUrl","status","success","timestamp"], simplified: ["leadId","messageId","recipientLinkedinUrl","status","success","timestamp"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["conversationId","error","leadId","messageId","recipientLinkedinUrl","status","success","timestamp"], simplified: ["conversationId","error","leadId","messageId","recipientLinkedinUrl","status","success","timestamp"] };
+        errorPlan = {"400":{"title":"Invalid request or sender not found"},"429":{"title":"Daily message limit exceeded"}};
         break;
       }
-    case "sendMessageToLead": {
+    case "inbox.sendMessageToLead": {
         
-        
+        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/inbox/send/lead/{leadId}";
         const qs: IDataObject = {};
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{leadId}").join(encodeURIComponent(String(this.getNodeParameter("leadId", itemIndex))));
-        setBodyField(body as IDataObject, {"name":"message","displayName":"Message","type":"string","required":true,"description":"The message content to send. Supports template variables:\n`{{firstName}}` (lead's first name), `{{lastName}}` (lead's last name)."}, this.getNodeParameter("message", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","type":"string","required":true,"description":"The LinkedIn sender account ID to use"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
+        if (additionalFields["campaignId"] !== undefined) setBodyField(body as IDataObject, {"name":"campaignId","displayName":"Campaign Id","description":"Optional campaign ID to associate this message with","type":"string"}, additionalFields["campaignId"], this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"message","displayName":"Message","description":"Message content to send","type":"string","required":true,"example":"Hi {{firstName}}, I wanted to follow up on our conversation..."}, this.getNodeParameter("message", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"senderId","displayName":"Sender Id","description":"LinkedIn sender ID to use","type":"string","required":true,"example":"sender_123"}, this.getNodeParameter("senderId", itemIndex), this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["leadId","messageId","recipientLinkedinUrl","status","success","timestamp"], simplified: ["leadId","messageId","recipientLinkedinUrl","status","success","timestamp"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["conversationId","error","leadId","messageId","recipientLinkedinUrl","status","success","timestamp"], simplified: ["conversationId","error","leadId","messageId","recipientLinkedinUrl","status","success","timestamp"] };
+        errorPlan = {"400":{"title":"Invalid request or sender not found"},"404":{"title":"Lead not found"}};
         break;
       }
-    case "createLeadDatabaseSearch": {
-        
-        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
-        const path = "/v1/lead-database/searches";
-        const qs: IDataObject = {};
-        const headers: IDataObject = {};
-        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
-        
-        setBodyField(body as IDataObject, {"name":"filters","displayName":"Filters","type":"object","required":true,"description":"Comprehensive filters for Lead Database search. All filters are optional and can be combined.","fields":[{"name":"acquired_end_date","displayName":"Acquired end date","type":"string","description":"Acquisition date range end (dd/mm/yyyy)"},{"name":"acquired_start_date","displayName":"Acquired start date","type":"string","description":"Acquisition date range start (dd/mm/yyyy)"},{"name":"bombora_composite_score","displayName":"Bombora composite score","type":"array","description":"Intent score ranges to filter by","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"bombora_topic","displayName":"Bombora topic","type":"array","description":"Bombora intent topics","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"bulk_domains","displayName":"Bulk domains","type":"string","description":"Company domains, comma-separated"},{"name":"companies","displayName":"Companies","type":"array","description":"Company names to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"company_linkedin_username","displayName":"Company linkedin username","type":"array","description":"Company LinkedIn usernames/URLs","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"company_sizes","displayName":"Company sizes","type":"array","description":"Company size ranges","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"company_status_comment","displayName":"Company status comment","type":"array","description":"Status comments to filter by","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"company_status_value","displayName":"Company status value","type":"string","description":"Company status","enum":["active","closed"]},{"name":"company_type","displayName":"Company type","type":"array","description":"Company types","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"demo_available","displayName":"Demo available","type":"boolean","description":"Company offers product demos"},{"name":"documentation_exist","displayName":"Documentation exist","type":"boolean","description":"Company has public documentation"},{"name":"education_institute","displayName":"Education institute","type":"array","description":"Educational institutions","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"education_keyword","displayName":"Education keyword","type":"array","description":"Keywords to search in education history","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"education_major","displayName":"Education major","type":"array","description":"Fields of study/majors","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_bulk_domains","displayName":"Excluded bulk domains","type":"string","description":"Company domains to exclude, comma-separated"},{"name":"excluded_companies","displayName":"Excluded companies","type":"array","description":"Company names to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_company_linkedin_username","displayName":"Excluded company linkedin username","type":"array","description":"Company LinkedIn usernames to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_company_sizes","displayName":"Excluded company sizes","type":"array","description":"Company sizes to exclude using mapped integer values","items":{"name":"item","displayName":"Item","type":"number"},"representation":"raw"},{"name":"excluded_company_type","displayName":"Excluded company type","type":"array","description":"Company types to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_education_institute","displayName":"Excluded education institute","type":"array","description":"Institutions to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_education_keyword","displayName":"Excluded education keyword","type":"array","description":"Education keywords to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_education_major","displayName":"Excluded education major","type":"array","description":"Majors to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_experimental_department","displayName":"Excluded experimental department","type":"array","description":"Experimental departments to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_experimental_industries","displayName":"Excluded experimental industries","type":"array","description":"Experimental industries to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_hq_location","displayName":"Excluded hq location","type":"array","description":"HQ locations to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_industries","displayName":"Excluded industries","type":"array","description":"Industries to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_job_posting_functions","displayName":"Excluded job posting functions","type":"array","description":"Job functions to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_job_posting_location","displayName":"Excluded job posting location","type":"array","description":"Job posting locations to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_job_posting_title","displayName":"Excluded job posting title","type":"array","description":"Job posting titles to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_job_titles","displayName":"Excluded job titles","type":"array","description":"Job titles to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_keywords","displayName":"Excluded keywords","type":"array","description":"Keywords to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_language_proficiency","displayName":"Excluded language proficiency","type":"array","description":"Language proficiency levels to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_languages","displayName":"Excluded languages","type":"array","description":"Languages to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_locations","displayName":"Excluded locations","type":"array","description":"Locations/countries to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_member_certifications","displayName":"Excluded member certifications","type":"array","description":"Certifications to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_member_department","displayName":"Excluded member department","type":"array","description":"Departments to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_member_description","displayName":"Excluded member description","type":"array","description":"Keywords to exclude from profile summaries","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_member_linkedin_username","displayName":"Excluded member linkedin username","type":"array","description":"LinkedIn usernames or profile URLs to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_member_skills","displayName":"Excluded member skills","type":"array","description":"Professional skills to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_naics_codes","displayName":"Excluded naics codes","type":"array","description":"NAICS codes to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_news_articles","displayName":"Excluded news articles","type":"array","description":"News keywords to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_recommendation_keyword","displayName":"Excluded recommendation keyword","type":"array","description":"Recommendation keywords to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_recommendation_linkedin_username","displayName":"Excluded recommendation linkedin username","type":"array","description":"Recommender usernames to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_seniority_levels","displayName":"Excluded seniority levels","type":"array","description":"Seniority levels to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_sic_codes","displayName":"Excluded sic codes","type":"array","description":"SIC codes to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_technologies_used","displayName":"Excluded technologies used","type":"array","description":"Technologies to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"excluded_top_topics","displayName":"Excluded top topics","type":"array","description":"Website topics to exclude","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"experimental_industries","displayName":"Experimental industries","type":"array","description":"Experimental/emerging industry classifications","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"experimental_member_department","displayName":"Experimental member department","type":"array","description":"Experimental/emerging department classifications","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"free_trial_available","displayName":"Free trial available","type":"boolean","description":"Company offers free trials"},{"name":"hq_location","displayName":"Hq location","type":"array","description":"Company headquarters locations","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"industries","displayName":"Industries","type":"array","description":"Industries to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"ipo_end_date","displayName":"Ipo end date","type":"string","description":"IPO date range end (dd/mm/yyyy)"},{"name":"ipo_start_date","displayName":"Ipo start date","type":"string","description":"IPO date range start (dd/mm/yyyy)"},{"name":"is_b2b","displayName":"Is b2b","type":"boolean","description":"Filter for B2B companies only"},{"name":"is_downloadable","displayName":"Is downloadable","type":"boolean","description":"Company offers downloadable products"},{"name":"is_public","displayName":"Is public","type":"boolean","description":"Filter for publicly listed companies only"},{"name":"job_posting_end_date","displayName":"Job posting end date","type":"string","description":"Job posting date range end (dd/mm/yyyy)"},{"name":"job_posting_functions","displayName":"Job posting functions","type":"array","description":"Job functions being recruited","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"job_posting_location","displayName":"Job posting location","type":"array","description":"Job posting locations","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"job_posting_seniority","displayName":"Job posting seniority","type":"array","description":"Job posting seniority level","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"job_posting_start_date","displayName":"Job posting start date","type":"string","description":"Job posting date range start (dd/mm/yyyy)"},{"name":"job_posting_title","displayName":"Job posting title","type":"array","description":"Job titles being recruited","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"job_posting_type","displayName":"Job posting type","type":"array","description":"Employment type","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"job_titles","displayName":"Job titles","type":"array","description":"Job titles to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"keywords","displayName":"Keywords","type":"array","description":"General keywords to search for","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"language_proficiency","displayName":"Language proficiency","type":"array","description":"Language proficiency levels","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"languages","displayName":"Languages","type":"array","description":"Languages spoken","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"last_funding_date","displayName":"Last funding date","type":"string","description":"Last funding date range","enum":["30","60","90","90+"]},{"name":"last_funding_round_name","displayName":"Last funding round name","type":"array","description":"Funding round names","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"locations","displayName":"Locations","type":"array","description":"Locations/countries to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"max_average_visit_duration_seconds","displayName":"Max average visit duration seconds","type":"number","description":"Maximum visit duration in seconds"},{"name":"max_bounce_rate","displayName":"Max bounce rate","type":"number","description":"Maximum bounce rate percentage"},{"name":"max_company_employee_reviews_aggregate_score","displayName":"Max company employee reviews aggregate score","type":"number","description":"Maximum employee satisfaction score"},{"name":"max_job_duration_months","displayName":"Max job duration months","type":"number","description":"Maximum duration at current job in months"},{"name":"max_last_funding_round_amount_raised","displayName":"Max last funding round amount raised","type":"number","description":"Maximum funding amount"},{"name":"max_pages_per_visit","displayName":"Max pages per visit","type":"number","description":"Maximum pages per visit"},{"name":"max_rank_category","displayName":"Max rank category","type":"number","description":"Maximum category ranking"},{"name":"max_rank_country","displayName":"Max rank country","type":"number","description":"Maximum country-specific ranking"},{"name":"max_rank_global","displayName":"Max rank global","type":"number","description":"Maximum global website ranking"},{"name":"max_revenue_annual","displayName":"Max revenue annual","type":"number","description":"Maximum annual revenue"},{"name":"max_total_experience_duration_months","displayName":"Max total experience duration months","type":"number","description":"Maximum total professional experience in months"},{"name":"max_total_website_visits_monthly","displayName":"Max total website visits monthly","type":"number","description":"Maximum monthly website visits"},{"name":"member_certifications","displayName":"Member certifications","type":"array","description":"Professional certifications","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"member_department","displayName":"Member department","type":"array","description":"Standard departments","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"member_description","displayName":"Member description","type":"array","description":"Keywords to search in profile summaries","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"member_full_name","displayName":"Member full name","type":"string","description":"Free-text search by person name"},{"name":"member_linkedin_username","displayName":"Member linkedin username","type":"array","description":"LinkedIn usernames or profile URLs to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"member_skills","displayName":"Member skills","type":"array","description":"Professional skills to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"min_average_visit_duration_seconds","displayName":"Min average visit duration seconds","type":"number","description":"Minimum visit duration in seconds"},{"name":"min_bounce_rate","displayName":"Min bounce rate","type":"number","description":"Minimum bounce rate percentage"},{"name":"min_company_employee_reviews_aggregate_score","displayName":"Min company employee reviews aggregate score","type":"number","description":"Minimum employee satisfaction score"},{"name":"min_job_duration_months","displayName":"Min job duration months","type":"number","description":"Minimum duration at current job in months"},{"name":"min_last_funding_round_amount_raised","displayName":"Min last funding round amount raised","type":"number","description":"Minimum funding amount"},{"name":"min_pages_per_visit","displayName":"Min pages per visit","type":"number","description":"Minimum pages per visit"},{"name":"min_rank_category","displayName":"Min rank category","type":"number","description":"Minimum category ranking"},{"name":"min_rank_country","displayName":"Min rank country","type":"number","description":"Minimum country-specific ranking"},{"name":"min_rank_global","displayName":"Min rank global","type":"number","description":"Minimum global website ranking"},{"name":"min_revenue_annual","displayName":"Min revenue annual","type":"number","description":"Minimum annual revenue"},{"name":"min_total_experience_duration_months","displayName":"Min total experience duration months","type":"number","description":"Minimum total professional experience in months"},{"name":"min_total_website_visits_monthly","displayName":"Min total website visits monthly","type":"number","description":"Minimum monthly website visits"},{"name":"mobile_apps_exist","displayName":"Mobile apps exist","type":"boolean","description":"Company has mobile applications"},{"name":"naics_codes","displayName":"Naics codes","type":"array","description":"NAICS (North American Industry Classification System) codes","items":{"name":"item","displayName":"Item","type":"object","additionalValue":{"name":"value","displayName":"Value","type":"any"},"representation":"raw"},"representation":"raw"},{"name":"news_articles","displayName":"News articles","type":"array","description":"Keywords in recent news articles","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"online_reviews_exist","displayName":"Online reviews exist","type":"boolean","description":"Company has online reviews"},{"name":"ownership_status","displayName":"Ownership status","type":"array","description":"Ownership status filter","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"pricing_available","displayName":"Pricing available","type":"boolean","description":"Company has public pricing page"},{"name":"recommendation_keyword","displayName":"Recommendation keyword","type":"array","description":"Keywords in LinkedIn recommendations","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"recommendation_linkedin_username","displayName":"Recommendation linkedin username","type":"array","description":"LinkedIn usernames of recommenders","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"seniority_levels","displayName":"Seniority levels","type":"array","description":"Seniority levels","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"sic_codes","displayName":"Sic codes","type":"array","description":"SIC (Standard Industrial Classification) codes","items":{"name":"item","displayName":"Item","type":"object","additionalValue":{"name":"value","displayName":"Value","type":"any"},"representation":"raw"},"representation":"raw"},{"name":"technologies_used","displayName":"Technologies used","type":"array","description":"Technologies used","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"},{"name":"top_topics","displayName":"Top topics","type":"array","description":"Website topics to include","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"}],"representation":"raw"}, this.getNodeParameter("filters", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"limit","displayName":"Limit","type":"integer","required":true,"minValue":1,"maxValue":10000,"description":"Maximum number of leads to find (1-10000)"}, this.getNodeParameter("limit", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"name","displayName":"Name","type":"string","required":true,"description":"A name for this search (for your reference)"}, this.getNodeParameter("name", itemIndex), this, itemIndex);
-    if (additionalFields["webhook_url"] !== undefined) setBodyField(body as IDataObject, {"name":"webhook_url","displayName":"Webhook url","type":"string","format":"uri","description":"Optional URL to receive webhook when search completes"}, additionalFields["webhook_url"], this, itemIndex);
-        
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
-        options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
-        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
-        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
-        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["created_at","id","name","status"], simplified: ["created_at","id","name","status"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"}};
-        break;
-      }
-    case "getLeadDatabaseSearchResults": {
+    case "leadDatabase.getSearchResults": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/lead-database/searches/{id}/results";
@@ -1849,20 +3224,20 @@ export class Sendpilot implements INodeType {
         
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
-    if (additionalFields["page"] !== undefined) qs["page"] = additionalFields["page"];
     if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
+    if (additionalFields["offset"] !== undefined) qs["offset"] = additionalFields["offset"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["id","pagination","results","status"], simplified: ["id","pagination","results","status"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["has_more","leads","limit","offset","search_id","total"], simplified: ["has_more","leads","limit","offset","search_id","total"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"404":{"title":"Search not found"},"429":{"title":"Rate limit exceeded"}};
         break;
       }
-    case "getLeadDatabaseSearchStatus": {
+    case "leadDatabase.getSearchStatus": {
         
         
         let path = "/v1/lead-database/searches/{id}/status";
@@ -1872,39 +3247,38 @@ export class Sendpilot implements INodeType {
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["completed_at","created_at","id","name","progress","status","totalResults"], simplified: ["completed_at","created_at","id","name","progress","status","totalResults"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["completed_at","created_at","error_message","id","name","progress","status"], simplified: ["completed_at","created_at","error_message","id","name","progress","status"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"404":{"title":"Search not found"},"429":{"title":"Rate limit exceeded"}};
         break;
       }
-    case "createLeadExtractorCampaign": {
+    case "leadDatabase.startSearch": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
-        const path = "/v1/lead-extractor/campaigns";
+        const path = "/v1/lead-database/searches";
         const qs: IDataObject = {};
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         
-        setBodyField(body as IDataObject, {"name":"limit","displayName":"Limit","type":"integer","required":true,"minValue":1,"maxValue":10000,"description":"Maximum number of leads to extract"}, this.getNodeParameter("limit", itemIndex), this, itemIndex);
-    if (additionalFields["mode"] !== undefined) setBodyField(body as IDataObject, {"name":"mode","displayName":"Mode","type":"string","description":"Extraction mode","enum":["extraction_only","with_enrichment"],"default":"extraction_only"}, additionalFields["mode"], this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"name","displayName":"Name","type":"string","required":true,"description":"A name for this extraction campaign"}, this.getNodeParameter("name", itemIndex), this, itemIndex);
-    if (additionalFields["url_type"] !== undefined) setBodyField(body as IDataObject, {"name":"url_type","displayName":"Url type","type":"string","description":"Type of URLs provided","enum":["linkedin_search","sales_navigator"],"default":"linkedin_search"}, additionalFields["url_type"], this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"urls","displayName":"Urls","type":"array","required":true,"description":"LinkedIn search URLs to extract leads from","items":{"name":"item","displayName":"Item","type":"string"},"representation":"raw"}, this.getNodeParameter("urls", itemIndex), this, itemIndex);
+        setBodyField(body as IDataObject, {"name":"filters","displayName":"Filters","description":"Lead database filters to apply. Use GET /v1/lead-database/filters to see supported filters and values.","type":"object","required":true,"representation":"raw","fields":[{"name":"acquired_end_date","displayName":"Acquired end date","description":"Acquisition date range end, dd/mm/yyyy.","type":"string"},{"name":"acquired_start_date","displayName":"Acquired start date","description":"Acquisition date range start, dd/mm/yyyy.","type":"string"},{"name":"bulk_domains","displayName":"Bulk domains","description":"Company domains separated by commas or newlines.","type":"string"},{"name":"companies","displayName":"Companies","description":"Company names.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"company_linkedin_username","displayName":"Company linkedin username","description":"Company LinkedIn usernames or URLs.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"company_sizes","displayName":"Company sizes","description":"Employee-size ranges.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["1","2-10","11-50","51-200","201-500","501-1000","1001-5000","5001-10000","10001+"]}},{"name":"company_type","displayName":"Company type","description":"Company types.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Privately Held","Public Company","Self-Owned","Partnership","Self-Employed","Nonprofit","Educational","Government Agency"]}},{"name":"demo_available","displayName":"Demo available","description":"Company offers a demo.","type":"boolean"},{"name":"documentation_exist","displayName":"Documentation exist","description":"Company provides documentation.","type":"boolean"},{"name":"excluded_bulk_domains","displayName":"Excluded bulk domains","description":"Company domains to exclude, separated by commas or newlines.","type":"string"},{"name":"excluded_companies","displayName":"Excluded companies","description":"Company names to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_company_linkedin_username","displayName":"Excluded company linkedin username","description":"Company LinkedIn usernames or URLs to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_company_sizes","displayName":"Excluded company sizes","description":"Employee-size codes to exclude, from 1 (one employee) to 9 (10001+).","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"integer","enum":[1,2,3,4,5,6,7,8,9]}},{"name":"excluded_company_type","displayName":"Excluded company type","description":"Company types to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Privately Held","Public Company","Self-Owned","Partnership","Self-Employed","Nonprofit","Educational","Government Agency"]}},{"name":"excluded_experimental_department","displayName":"Excluded experimental department","description":"Compatibility alias for excluded_member_department; do not supply both with different values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_experimental_industries","displayName":"Excluded experimental industries","description":"Compatibility alias for excluded_industries; do not supply both with different values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_hq_location","displayName":"Excluded hq location","description":"Headquarters locations to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_industries","displayName":"Excluded industries","description":"Industries to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_job_posting_functions","displayName":"Excluded job posting functions","description":"Job functions to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_job_posting_location","displayName":"Excluded job posting location","description":"Job posting locations to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_job_posting_title","displayName":"Excluded job posting title","description":"Recruiting titles to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_job_titles","displayName":"Excluded job titles","description":"Job titles to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_keywords","displayName":"Excluded keywords","description":"Company keywords to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_locations","displayName":"Excluded locations","description":"Person locations to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_member_certifications","displayName":"Excluded member certifications","description":"Certifications to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_member_department","displayName":"Excluded member department","description":"Departments to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_member_description","displayName":"Excluded member description","description":"Profile-summary keywords to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_member_linkedin_username","displayName":"Excluded member linkedin username","description":"LinkedIn usernames or profile URLs to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_member_skills","displayName":"Excluded member skills","description":"Profile skills to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_naics_codes","displayName":"Excluded naics codes","description":"NAICS code strings to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_seniority_levels","displayName":"Excluded seniority levels","description":"Seniority levels to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Specialist","Manager","Owner","Founder","President/Vice President","Director","Senior","Head","C-Level","Partner","Intern"]}},{"name":"excluded_sic_codes","displayName":"Excluded sic codes","description":"SIC code strings to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_technologies_used","displayName":"Excluded technologies used","description":"Company technologies to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"excluded_top_topics","displayName":"Excluded top topics","description":"Website topics to exclude.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"experimental_industries","displayName":"Experimental industries","description":"Compatibility alias for industries; do not supply both with different values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"experimental_member_department","displayName":"Experimental member department","description":"Compatibility alias for member_department; do not supply both with different values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"free_trial_available","displayName":"Free trial available","description":"Company offers a free trial.","type":"boolean"},{"name":"hq_location","displayName":"Hq location","description":"Company headquarters locations.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"industries","displayName":"Industries","description":"Company industries. Uses the supported experimental_industries provider field; query the catalog for values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"ipo_end_date","displayName":"Ipo end date","description":"IPO date range end, dd/mm/yyyy.","type":"string"},{"name":"ipo_start_date","displayName":"Ipo start date","description":"IPO date range start, dd/mm/yyyy.","type":"string"},{"name":"is_downloadable","displayName":"Is downloadable","description":"Company offers downloadable software/resources.","type":"boolean"},{"name":"is_mapped_industries_strict","displayName":"Is mapped industries strict","description":"True requires exact industry matching; false lets the provider match related industries.","type":"boolean"},{"name":"job_posting_end_date","displayName":"Job posting end date","description":"Job posting date range end, dd/mm/yyyy.","type":"string"},{"name":"job_posting_location","displayName":"Job posting location","description":"Job posting locations.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"job_posting_seniority","displayName":"Job posting seniority","description":"Recruiting seniority levels.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Entry level","Internship","Associate","Mid-Senior level","Director","Executive","Not Applicable"]}},{"name":"job_posting_start_date","displayName":"Job posting start date","description":"Job posting date range start, dd/mm/yyyy.","type":"string"},{"name":"job_posting_title","displayName":"Job posting title","description":"Job titles the company is recruiting.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"job_posting_type","displayName":"Job posting type","description":"Employment types.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Full-time","Part-time","Contract","Internship","Volunteer","Temporary","Other"]}},{"name":"job_title_match_mode","displayName":"Job title match mode","description":"Job-title matching: exact, contains (provider default), or smart.","type":"string","enum":["exact","contains","smart"]},{"name":"job_title_smart_mode","displayName":"Job title smart mode","description":"Sensitivity when job_title_match_mode is smart.","type":"string","enum":["loose","normal","strict"]},{"name":"job_titles","displayName":"Job titles","description":"Current job titles. Use the filter catalog for suggested values.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"keywords","displayName":"Keywords","description":"Keywords in company descriptions or specialties.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"last_funding_round_name","displayName":"Last funding round name","description":"Latest funding-round types.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Seed Round","Pre Seed Round","Venture Round","Series A","Grant","Non Equity Assistance","Private Equity Round","Series B","Angel Round","Debt Financing","Post-IPO Equity","Series C","Corporate Round","Equity Crowdfunding","Funding Round","Convertible Note","Post-IPO Debt","Series D","Secondary Market","Post-IPO Secondary","Initial Coin Offering","Product Crowdfunding","Series E","Series F","Series G","Series H"]}},{"name":"locations","displayName":"Locations","description":"Person country, region or city.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"max_average_visit_duration_seconds","displayName":"Max average visit duration seconds","description":"Maximum visit duration in seconds.","type":"integer","minValue":0},{"name":"max_bounce_rate","displayName":"Max bounce rate","description":"Maximum bounce-rate percentage.","type":"integer","minValue":0,"maxValue":100},{"name":"max_company_employee_reviews_aggregate_score","displayName":"Max company employee reviews aggregate score","description":"Maximum employee-review score.","type":"integer","minValue":0},{"name":"max_job_duration_months","displayName":"Max job duration months","description":"Maximum time in the current job, in months.","type":"integer","minValue":0},{"name":"max_last_funding_round_amount_raised","displayName":"Max last funding round amount raised","description":"Maximum latest funding amount.","type":"integer","minValue":0},{"name":"max_pages_per_visit","displayName":"Max pages per visit","description":"Maximum average pages per visit.","type":"integer","minValue":0},{"name":"max_rank_category","displayName":"Max rank category","description":"Maximum website rank within its category.","type":"integer","minValue":0},{"name":"max_rank_country","displayName":"Max rank country","description":"Maximum website rank within its country.","type":"integer","minValue":0},{"name":"max_rank_global","displayName":"Max rank global","description":"Maximum global website rank.","type":"integer","minValue":0},{"name":"max_revenue_annual","displayName":"Max revenue annual","description":"Maximum annual revenue.","type":"integer","minValue":0},{"name":"max_total_experience_duration_months","displayName":"Max total experience duration months","description":"Maximum total experience in months.","type":"integer","minValue":0},{"name":"max_total_website_visits_monthly","displayName":"Max total website visits monthly","description":"Maximum monthly website visits.","type":"integer","minValue":0},{"name":"member_certifications","displayName":"Member certifications","description":"Professional certifications.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"member_department","displayName":"Member department","description":"Departments; mapped to the supported provider department filter.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"member_description","displayName":"Member description","description":"Keywords in profile summaries.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"member_full_name","displayName":"Member full name","description":"Person name search.","type":"string"},{"name":"member_linkedin_username","displayName":"Member linkedin username","description":"LinkedIn usernames or profile URLs.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"member_skills","displayName":"Member skills","description":"Profile skills.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"min_average_visit_duration_seconds","displayName":"Min average visit duration seconds","description":"Minimum visit duration in seconds.","type":"integer","minValue":0},{"name":"min_bounce_rate","displayName":"Min bounce rate","description":"Minimum bounce-rate percentage.","type":"integer","minValue":0,"maxValue":100},{"name":"min_company_employee_reviews_aggregate_score","displayName":"Min company employee reviews aggregate score","description":"Minimum employee-review score.","type":"integer","minValue":0},{"name":"min_job_duration_months","displayName":"Min job duration months","description":"Minimum time in the current job, in months.","type":"integer","minValue":0},{"name":"min_last_funding_round_amount_raised","displayName":"Min last funding round amount raised","description":"Minimum latest funding amount.","type":"integer","minValue":0},{"name":"min_pages_per_visit","displayName":"Min pages per visit","description":"Minimum average pages per visit.","type":"integer","minValue":0},{"name":"min_rank_category","displayName":"Min rank category","description":"Minimum website rank within its category.","type":"integer","minValue":0},{"name":"min_rank_country","displayName":"Min rank country","description":"Minimum website rank within its country.","type":"integer","minValue":0},{"name":"min_rank_global","displayName":"Min rank global","description":"Minimum global website rank.","type":"integer","minValue":0},{"name":"min_revenue_annual","displayName":"Min revenue annual","description":"Minimum annual revenue.","type":"integer","minValue":0},{"name":"min_total_experience_duration_months","displayName":"Min total experience duration months","description":"Minimum total experience in months.","type":"integer","minValue":0},{"name":"min_total_website_visits_monthly","displayName":"Min total website visits monthly","description":"Minimum monthly website visits.","type":"integer","minValue":0},{"name":"mobile_apps_exist","displayName":"Mobile apps exist","description":"Company has mobile apps.","type":"boolean"},{"name":"naics_codes","displayName":"Naics codes","description":"NAICS code objects from the catalog. Only each value is sent to the provider.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"object","representation":"raw","fields":[{"name":"label","displayName":"Label","type":"string","required":true},{"name":"value","displayName":"Value","type":"string","required":true}]}},{"name":"online_reviews_exist","displayName":"Online reviews exist","description":"Company has online reviews.","type":"boolean"},{"name":"ownership_status","displayName":"Ownership status","description":"Company ownership status.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Private","Public","Investment Company","NGO/NPO/NFP/Organization/Association","Government","Product/Brand/Service","SPAC"]}},{"name":"pricing_available","displayName":"Pricing available","description":"Company publishes pricing.","type":"boolean"},{"name":"seniority_levels","displayName":"Seniority levels","description":"Seniority level; use exact catalog values, e.g. C-Level or President/Vice President.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string","enum":["Specialist","Manager","Owner","Founder","President/Vice President","Director","Senior","Head","C-Level","Partner","Intern"]}},{"name":"sic_codes","displayName":"Sic codes","description":"SIC code objects from the catalog. Only each value is sent to the provider.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"object","representation":"raw","fields":[{"name":"label","displayName":"Label","type":"string","required":true},{"name":"value","displayName":"Value","type":"string","required":true}]}},{"name":"technologies_used","displayName":"Technologies used","description":"Technologies used by the company.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}},{"name":"top_topics","displayName":"Top topics","description":"Topics covered by the company website.","type":"array","representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}}]}, this.getNodeParameter("filters", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"limit","displayName":"Limit","description":"Maximum number of leads to find. Available credits cap the number returned; there is no fixed maximum.","type":"number","required":true,"minValue":1}, this.getNodeParameter("limit", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"name","displayName":"Name","description":"Name to assign to the search.","type":"string","required":true}, this.getNodeParameter("name", itemIndex), this, itemIndex);
+    if (additionalFields["webhook_url"] !== undefined) setBodyField(body as IDataObject, {"name":"webhook_url","displayName":"Webhook url","description":"Public HTTPS URL that receives a notification when the search completes.","type":"string","example":"https://my-app.example.com/webhooks/sendpilot"}, additionalFields["webhook_url"], this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["created_at","estimated_credits","id","name","status"], simplified: ["created_at","estimated_credits","id","name","status"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["created_at","estimated_quota","id","name","status"], simplified: ["created_at","estimated_quota","id","name","status"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"403":{"title":"Insufficient quota"},"429":{"title":"Rate limit exceeded"},"500":{"title":"Internal server error"}};
         break;
       }
-    case "getLeadExtractorCampaignResults": {
+    case "leadExtractor.getResults": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/lead-extractor/campaigns/{id}/results";
@@ -1912,20 +3286,21 @@ export class Sendpilot implements INodeType {
         
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
-    if (additionalFields["offset"] !== undefined) qs["offset"] = additionalFields["offset"];
     if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
+    if (additionalFields["offset"] !== undefined) qs["offset"] = additionalFields["offset"];
+    if (additionalFields["enriched_only"] !== undefined) qs["enriched_only"] = additionalFields["enriched_only"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["leads","pagination"], simplified: ["leads","pagination"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["campaign_id","has_more","leads","limit","offset","total"], simplified: ["campaign_id","has_more","leads","limit","offset","total"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"404":{"title":"Campaign not found"},"429":{"title":"Rate limit exceeded"}};
         break;
       }
-    case "getLeadExtractorCampaignStatus": {
+    case "leadExtractor.getStatus": {
         
         
         let path = "/v1/lead-extractor/campaigns/{id}/status";
@@ -1935,16 +3310,40 @@ export class Sendpilot implements INodeType {
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["created_at","id","name","progress","status"], simplified: ["created_at","id","name","progress","status"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["completed_at","created_at","error_message","id","name","progress","status"], simplified: ["completed_at","created_at","error_message","id","name","progress","status"] };
+        errorPlan = {"401":{"title":"Invalid or missing API key"},"404":{"title":"Campaign not found"},"429":{"title":"Rate limit exceeded"}};
         break;
       }
-    case "addLeadsToCampaign": {
+    case "leadExtractor.startExtraction": {
+        
+        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+        const path = "/v1/lead-extractor/campaigns";
+        const qs: IDataObject = {};
+        const headers: IDataObject = {};
+        const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
+        
+        setBodyField(body as IDataObject, {"name":"limit","displayName":"Limit","description":"Maximum number of leads to extract. Available credits cap the number returned; there is no fixed maximum.","type":"number","required":true,"minValue":1}, this.getNodeParameter("limit", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"mode","displayName":"Mode","description":"Choose lead extraction only or extraction with enrichment.","type":"string","required":true,"enum":["extraction_only","with_enrichment"]}, this.getNodeParameter("mode", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"name","displayName":"Name","description":"Name of the extraction campaign.","type":"string","required":true}, this.getNodeParameter("name", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"url_type","displayName":"Url type","description":"Type of the supplied search URLs.","type":"string","required":true,"enum":["linkedin_search","sales_navigator"]}, this.getNodeParameter("url_type", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"urls","displayName":"Urls","description":"HTTPS search URLs from LinkedIn or Sales Navigator.","type":"array","required":true,"representation":"raw","items":{"name":"item","displayName":"Item","type":"string"}}, this.getNodeParameter("urls", itemIndex), this, itemIndex);
+    if (additionalFields["webhook_url"] !== undefined) setBodyField(body as IDataObject, {"name":"webhook_url","displayName":"Webhook url","description":"Public HTTPS URL that receives a notification when the extraction campaign completes.","type":"string","example":"https://my-app.example.com/webhooks/sendpilot"}, additionalFields["webhook_url"], this, itemIndex);
+        
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
+        options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
+        credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
+        retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
+        pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["created_at","estimated_credits","id","name","status"], simplified: ["created_at","estimated_credits","id","name","status"] };
+        errorPlan = {"400":{"title":"Invalid request parameters"},"401":{"title":"Invalid or missing API key"},"403":{"title":"Insufficient credits"},"429":{"title":"Rate limit exceeded"}};
+        break;
+      }
+    case "leads.add": {
         
         
         const path = "/v1/leads";
@@ -1952,60 +3351,62 @@ export class Sendpilot implements INodeType {
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         
-        setBodyField(body as IDataObject, {"name":"campaignId","displayName":"Campaign Id","type":"string","required":true,"description":"Campaign ID to add leads to"}, this.getNodeParameter("campaignId", itemIndex), this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"leads","displayName":"Leads","type":"array","required":true,"items":{"name":"item","displayName":"Item","type":"object","description":"Lead object with required LinkedIn URL and optional fields.\nAny additional properties beyond the defined ones will be stored as custom fields\nfor personalization in campaign messages.","example":{"company":"TechCorp","firstName":"John","industry":"Technology","lastName":"Doe","linkedinUrl":"https://www.linkedin.com/in/johndoe","region":"North America","title":"VP of Engineering"},"fields":[{"name":"company","displayName":"Company","type":"string","description":"Company name (optional)"},{"name":"email","displayName":"Email","type":"string","description":"Email address (optional)"},{"name":"firstName","displayName":"First Name","type":"string","description":"First name (optional)"},{"name":"lastName","displayName":"Last Name","type":"string","description":"Last name (optional)"},{"name":"linkedinUrl","displayName":"Linkedin Url","type":"string","required":true,"description":"LinkedIn profile URL (required)","example":"https://www.linkedin.com/in/johndoe"},{"name":"title","displayName":"Title","type":"string","description":"Job title (optional)"}],"additionalValue":{"name":"value","displayName":"Value","type":"any"},"representation":"raw"},"representation":"raw"}, this.getNodeParameter("leads", itemIndex), this, itemIndex);
+        setBodyField(body as IDataObject, {"name":"campaignId","displayName":"Campaign Id","description":"ID of the campaign to add leads to.","type":"string","required":true,"example":"cmobr5lei0000u1h02ezf5itt"}, this.getNodeParameter("campaignId", itemIndex), this, itemIndex);
+    setBodyField(body as IDataObject, {"name":"leads","displayName":"Leads","description":"Array of 1–1,000 leads. Each lead must include linkedinUrl; other fields are dynamic.","type":"array","required":true,"example":[{"company":"Acme Corp","firstName":"John","industry":"SaaS","lastName":"Doe","linkedinUrl":"https://www.linkedin.com/in/johndoe/","region":"EMEA","title":"VP of Engineering"}],"representation":"raw","items":{"name":"item","displayName":"Item","type":"object","representation":"raw","fields":[{"name":"company","displayName":"Company","type":"string","example":"Acme Corp"},{"name":"email","displayName":"Email","type":"string","example":"john@example.com"},{"name":"firstName","displayName":"First Name","type":"string","example":"John"},{"name":"lastName","displayName":"Last Name","type":"string","example":"Doe"},{"name":"linkedinUrl","displayName":"Linkedin Url","type":"string","required":true,"example":"https://www.linkedin.com/in/johndoe/"},{"name":"title","displayName":"Title","type":"string","example":"VP of Engineering"}],"additionalValue":{"name":"value","displayName":"Value","type":"any"}}}, this.getNodeParameter("leads", itemIndex), this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "POST" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["duplicatesSkipped","errors","invalidEntries","leadsAdded","success"], simplified: ["duplicatesSkipped","errors","invalidEntries","leadsAdded","success"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        errorPlan = {"400":{"title":"Invalid request data"},"404":{"title":"Campaign not found"}};
         break;
       }
-    case "getLeadById": {
+    case "leads.get": {
         
-        
+        additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/leads/{id}";
         const qs: IDataObject = {};
         
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
+    if (additionalFields["full"] !== undefined) qs["full"] = additionalFields["full"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
-        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["campaignId","company","createdAt","firstName","id","lastName","linkedinUrl","status","title","updatedAt"], simplified: ["campaignId","company","createdAt","firstName","id","lastName","linkedinUrl","status","title","updatedAt"] };
-        errorPlan = {"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["about","campaignId","company","connectionCount","createdAt","customLeadStatus","data","email","firstName","followerCount","id","industry","isOpenProfile","isPremium","lastName","linkedinUrl","location","profilePictureUrl","senderId","status","title","updatedAt","website"], simplified: ["id","title","status","email","createdAt","updatedAt","about","campaignId","company","connectionCount"] };
+        errorPlan = {"404":{"title":"Lead not found"}};
         break;
       }
-    case "listLeads": {
+    case "leads.list": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         const path = "/v1/leads";
         const qs: IDataObject = {};
         
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
-        if (additionalFields["campaignId"] !== undefined) qs["campaignId"] = additionalFields["campaignId"];
+        qs["campaignId"] = this.getNodeParameter("campaignId", itemIndex);
     if (additionalFields["status"] !== undefined) qs["status"] = additionalFields["status"];
+    if (additionalFields["full"] !== undefined) qs["full"] = additionalFields["full"];
     if (additionalFields["page"] !== undefined) qs["page"] = additionalFields["page"];
     if (additionalFields["limit"] !== undefined) qs["limit"] = additionalFields["limit"];
         
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "GET" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["leads","pagination"], simplified: ["leads","pagination"] };
-        errorPlan = {"401":{"title":"Unauthorized"}};
+        errorPlan = {};
         break;
       }
-    case "updateLeadStatus": {
+    case "leads.updateStatus": {
         
         additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
         let path = "/v1/leads/{id}/status";
@@ -2013,16 +3414,17 @@ export class Sendpilot implements INodeType {
         const headers: IDataObject = {};
         const body: IDataObject | IDataObject[] | string | number | boolean | null = {};
         path = path.split("{id}").join(encodeURIComponent(String(this.getNodeParameter("id", itemIndex))));
-        if (additionalFields["note"] !== undefined) setBodyField(body as IDataObject, {"name":"note","displayName":"Note","type":"string","description":"Optional note for the status change"}, additionalFields["note"], this, itemIndex);
-    setBodyField(body as IDataObject, {"name":"status","displayName":"Status","type":"string","required":true,"description":"New status for the lead","enum":["PENDING","CONNECTION_SENT","CONNECTION_ACCEPTED","MESSAGE_SENT","REPLY_RECEIVED","DONE"]}, this.getNodeParameter("status", itemIndex), this, itemIndex);
+        if (additionalFields["customLeadStatus"] !== undefined) setBodyField(body as IDataObject, {"name":"customLeadStatus","displayName":"Custom Lead Status","description":"New custom lead status for CRM categorization","type":"string","enum":["LEAD","INTERESTED","MEETING_BOOKED","MEETING_COMPLETE_NOT_CLOSED","CLOSED","WRONG_PERSON","NOT_INTERESTED","NO_RESPONSE"],"example":"INTERESTED"}, additionalFields["customLeadStatus"], this, itemIndex);
+    if (additionalFields["note"] !== undefined) setBodyField(body as IDataObject, {"name":"note","displayName":"Note","description":"Optional note explaining the status change.","type":"string","example":"Customer showed interest in demo"}, additionalFields["note"], this, itemIndex);
+    if (additionalFields["status"] !== undefined) setBodyField(body as IDataObject, {"name":"status","displayName":"Status","description":"Set an outcome status. Sequence-managed statuses cannot be changed through this field.","type":"string","enum":["OPPORTUNITY","MEETING_BOOKED","DONE","UNSUBSCRIBED","IRRELEVANT"],"example":"MEETING_BOOKED"}, additionalFields["status"], this, itemIndex);
         
-        const serverBaseUrl = resolveServerBaseUrl(this as never, [{"id":"documentServer1HttpsApiSendpilotAi","url":"https://api.sendpilot.ai","kind":"selectable","variables":[]}], "documentServer1HttpsApiSendpilotAi", nodeOptions, false);
+        const serverBaseUrl = { url: "https://api.sendpilot.ai", blockRedirects: false };
         options = { method: "PATCH" as unknown as IHttpRequestOptions["method"], url: serverBaseUrl.url + path, qs, headers: { ...headers, ...{ 'Content-Type': "application/json" } }, body: body, json: true, arrayFormat: "indices", ...(serverBaseUrl.blockRedirects ? { maxRedirects: 0 } : {}) };
         credentialApplications = ([{"credentialType":"sendpilotApi","type":"apiKey","location":"header","parameter":"X-API-Key"}]) as CredentialApplication[];
         retryContract = { mode: "none", retryConnectionFailures: false, retryTimeouts: false, retryRateLimits: false, retryServerErrors: false, maxAttempts: 1, maxElapsedMs: 30000, baseBackoffMs: 500, maxBackoffMs: 5000, jitterRatio: 0.2, idempotency: undefined };
         pagination = { style: "none", page: "", limit: "", cursor: "", responseCursor: "", hasMore: "", itemPath: "", advancement: "", maxPages: 1, maxItems: Number.POSITIVE_INFINITY, maxElapsedMs: 30000, maxMemoryBytes: 10485760, repeatedCursorLimit: 1, repeatedPageLimit: 1, pageSize: 100 };
         responsePlan = { binary: false, full: false, envelopePath: "", itemPath: "", fields: ["leadId","message","status","success"], simplified: ["leadId","message","status","success"] };
-        errorPlan = {"400":{"title":"Bad request"},"401":{"title":"Unauthorized"},"404":{"title":"Resource not found"}};
+        errorPlan = {"400":{"title":"At least one of status or customLeadStatus is required"},"404":{"title":"Lead not found"}};
         break;
       }
           default: throw new NodeOperationError(this.getNode(), `Unsupported operation ${operation} for node version ${nodeVersion}`, { itemIndex });
